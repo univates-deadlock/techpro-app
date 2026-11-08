@@ -15,6 +15,9 @@ import {
   QUOTE_STATUS_META,
   getQuote,
   isQuoteOpen,
+  sendQuoteApi,
+  approveQuoteApi,
+  rejectQuoteApi,
   type Quote,
 } from "@/lib/quotes";
 
@@ -30,6 +33,9 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -83,15 +89,49 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const generalDiscountCents = quote.discountCents;
   const totalDiscountsCents = itemDiscountsCents + generalDiscountCents;
   const hasBothDiscountTypes = itemDiscountsCents > 0 && generalDiscountCents > 0;
+  
+  async function handleStatusChange(action: "send" | "approve" | "reject", notes?: string) {
+    if (!quote) return;
+    setIsActionLoading(true);
+    setActionError("");
+    setSuccessMessage("");
+
+    try {
+      let updated: Quote;
+      if (action == "send"){
+        updated = await sendQuoteApi(quote.id);
+        setSuccessMessage("Orçamento marcado como enviado.");
+      } else if (action == "approve") {
+        updated = await approveQuoteApi(quote.id, { decisionNotes: notes });
+        setSuccessMessage("Orçamento aprovado com sucesso.");
+      } else {
+        if (!notes) throw new Error("Informe o motivo da rejeição.");
+        updated = await rejectQuoteApi(quote.id, { decisionNotes: notes });
+        setSuccessMessage("Orçamento marcado como rejeitado.");
+      }
+      setQuote(updated);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Erro ao processar ação.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  }
 
   return (
     <div>
+      {/* Error alert (aprove, reject, sent) */}
+      {actionError ? (
+        <div className="mb-4 no-print">
+          <Alert tone="error">{actionError}</Alert>
+        </div>
+      ) : null}
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <button
             type="button"
             onClick={() => router.push("/orcamentos")}
-            className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tp-text-body hover:text-tp-text-main"
+            className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tp-text-body hover:text-tp-text-main no-print"
           >
             <Icon name="back" size={16} />
             Orçamentos
@@ -108,21 +148,63 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
           <p className="mt-1 text-sm text-tp-text-muted">{quote.clientName}</p>
         </div>
 
-        {isQuoteOpen(quote.status) ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setSuccessMessage("");
-              setShowEditModal(true);
-            }}
-          >
-            Editar orçamento
+        {/* Grupo de Ações do Orçamento (Exportar PDF, Editar e Alterar Status) */}
+        <div className="flex flex-wrap items-center gap-2 no-print">
+          <Button variant="secondary" onClick={() => window.print()}>
+            <Icon name="paperclip" size={16} />
+            Exportar PDF
           </Button>
-        ) : null}
+
+          {isQuoteOpen(quote.status) ? (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSuccessMessage("");
+                setShowEditModal(true);
+              }}
+            >
+              Editar orçamento
+            </Button>
+          ) : null}
+
+          {quote.status === "DRAFT" ? (
+            <Button
+              variant="primary"
+              isLoading={isActionLoading}
+              onClick={() => handleStatusChange("send")}
+            >
+              Marcar como Enviado
+            </Button>
+          ) : null}
+
+          {quote.status === "SENT" ? (
+            <>
+              <Button
+                variant="primary"
+                isLoading={isActionLoading}
+                onClick={() => handleStatusChange("approve")}
+              >
+                Aprovar
+              </Button>
+              <Button
+                variant="secondary"
+                isLoading={isActionLoading}
+                onClick={() => {
+                  const reason = window.prompt("Informe o motivo da rejeição:");
+                  if (reason !== null && reason.trim() !== "") {
+                    handleStatusChange("reject", reason.trim());
+                  }
+                }}
+              >
+                Rejeitar
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {successMessage ? (
-        <div className="mb-6">
+        <div className="mb-6 no-print">
           <Alert tone="success">{successMessage}</Alert>
         </div>
       ) : null}

@@ -8,6 +8,8 @@ import type {
   QuoteStatusValue,
   UpdateQuoteInput,
   UpdateQuoteItemInput,
+  ApproveQuoteInput,
+  RejectQuoteInput,
 } from "../schemas/quote.schema.js";
 import { AppError } from "../utils/AppError.js";
 import { calcItemSubtotal, calcQuoteTotals, toDecimal } from "./quote.calculations.js";
@@ -364,4 +366,70 @@ export const deleteQuoteItem = async (quoteId: string, itemId: string) =>
     await recalculateQuote(tx, quoteId, quote.discount);
 
     return findQuoteDetail(tx, quoteId);
+  });
+
+  // 11) ============= Send Quote (DRAFT --> SENT) =============
+export const sendQuote = async (id: string) =>
+  prisma.$transaction(async (tx) => {
+    const quote = await getOpenQuoteOrThrow(tx, id);
+
+    if(quote.status !== "DRAFT") {
+      throw new AppError("Apenas orçamentos em rascunho podem ser enviados", 409);
+    }
+
+    const countItems = await tx.quoteItem.count({ where: { quoteId: id } });
+    if(countItems === 0) {
+      throw new AppError("Não é possível enviar um orçamento sem itens", 409);
+    }
+
+    await tx.quote.update({
+      where: { id },
+      data: { status: "SENT", sentAt: new Date() },
+    });
+
+    return findQuoteDetail(tx, id);
+  });
+
+  // 12) ============= Approve Quote (SENT --> APPROVED) =============
+export const approveQuote = async (id: string, data: ApproveQuoteInput) =>
+  prisma.$transaction(async (tx) => {
+    const quote = await getOpenQuoteOrThrow(tx, id);
+
+    if(quote.status !== "SENT") {
+      throw new AppError("Apenas orçamentos enviados podem ser aprovados", 409);
+    }
+
+    await tx.quote.update({
+      where: { id },
+      data: {
+        status: "APPROVED",
+        decidedAt: new Date(),
+        decisionNotes: data.decisionNotes ?? null,
+        decisionEvidenceUrl: data.decisionEvidenceUrl ?? null,
+      },
+    });
+
+    return findQuoteDetail(tx, id);
+  });
+
+  // 13) ============= Reject Quote (SENT --> REJECTED) =============
+export const rejectQuote = async (id: string, data: RejectQuoteInput) =>
+  prisma.$transaction(async (tx) => {
+    const quote = await getOpenQuoteOrThrow(tx, id);
+
+    if(quote.status !== "SENT") {
+      throw new AppError("Apenas orçamentos enviados podem ser rejeitados", 409);
+    }
+
+    await tx.quote.update({
+      where: { id },
+      data: {
+        status: "REJECTED",
+        decidedAt: new Date(),
+        decisionNotes: data.decisionNotes,
+        decisionEvidenceUrl: data.decisionEvidenceUrl ?? null,
+      },
+    });
+
+    return findQuoteDetail(tx, id);
   });
