@@ -28,6 +28,20 @@ import {
  * discounts and general discount), history, and editing while open.
  */
 
+// Texts - action needs to be confirmed by the user before proceeding
+const CONFIRM_COPY = {
+  send: {
+    title: "Marcar como enviado",
+    message: "Confirma que este orçamento foi enviado ao cliente? Ele ficará aguardando decisão.",
+    confirmLabel: "Confirmar envio",
+  },
+  approve: {
+    title: "Aprovar orçamento",
+    message: "Confirmar a aprovação? Depois disso o orçamento não poderá mais ser editado.",
+    confirmLabel: "Confirmar aprovação",
+  },
+} as const;
+
 export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const router = useRouter();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -42,6 +56,8 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
+
+  const [pendingAction, setPendingAction] = useState<"send" | "approve" | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -144,6 +160,13 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
     if (ok) setShowRejectModal(false);
   }
 
+  async function confirmPendingAction() {
+    if (!pendingAction) return;
+    await handleStatusChange(pendingAction);
+    // Always close it: if an error occurred, a red alert appears at the top of the page
+    setPendingAction(null);
+  }
+
   return (
     <div>
       {/* Error alert (aprove, reject, sent) */}
@@ -198,7 +221,7 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
             <Button
               variant="primary"
               isLoading={isActionLoading}
-              onClick={() => handleStatusChange("send")}
+              onClick={() => setPendingAction("send")}
             >
               Marcar como Enviado
             </Button>
@@ -209,7 +232,7 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
               <Button
                 variant="primary"
                 isLoading={isActionLoading}
-                onClick={() => handleStatusChange("approve")}
+                onClick={() => setPendingAction("approve")}
               >
                 Aprovar
               </Button>
@@ -275,6 +298,32 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Confirmation of sending/approving */}
+      <Modal
+        open={pendingAction !== null}
+        title={pendingAction ? CONFIRM_COPY[pendingAction].title : ""}
+        onClose={() => (isActionLoading ? null : setPendingAction(null))}
+        dismissible={!isActionLoading}
+      >
+        {pendingAction ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-tp-text-body">{CONFIRM_COPY[pendingAction].message}</p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                disabled={isActionLoading}
+                onClick={() => setPendingAction(null)}
+              >
+                Cancelar
+              </Button>
+              <Button variant="primary" isLoading={isActionLoading} onClick={confirmPendingAction}>
+                {CONFIRM_COPY[pendingAction].confirmLabel}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Modal>
 
       <div className="grid gap-6 lg:grid-cols-3">

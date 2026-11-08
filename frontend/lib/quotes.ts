@@ -10,10 +10,6 @@
  * The API serializes the Prisma Decimal columns as strings ("123.45").
  * Money is converted to integer cents once, here at the boundary, so the
  * screens never do floating-point currency arithmetic.
- *
- * The API still has no endpoints to send a quote, record its decision or
- * upload evidence, and quotes have no sequential number yet — those join
- * lib/quotes.ts as the backend delivers them.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
