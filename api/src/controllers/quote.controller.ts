@@ -7,6 +7,8 @@ import {
   quoteItemIdSchema,
   updateQuoteItemSchema,
   updateQuoteSchema,
+  approveQuoteSchema,
+  rejectQuoteSchema,
 } from "../schemas/quote.schema.js";
 import * as quoteService from "../services/quote.service.js";
 import { AppError } from "../utils/AppError.js";
@@ -80,5 +82,28 @@ export const deleteQuoteItem = async (req: Request, res: Response) => {
   const quoteId = quoteIdSchema.parse(req.params.id);
   const itemId = quoteItemIdSchema.parse(req.params.itemId);
   const quote = await quoteService.deleteQuoteItem(quoteId, itemId);
+  return res.json(quote);
+};
+
+// 9) send quote
+export const sendQuote = async (req: Request, res: Response) => {
+  const id = quoteIdSchema.parse(req.params.id);
+  const quote = await quoteService.sendQuote(id);
+  return res.json(quote);
+};
+
+// 10) Approve quote
+export const approveQuote = async (req: Request, res: Response) => {
+  const id = quoteIdSchema.parse(req.params.id);
+  const validatedData = approveQuoteSchema.parse(req.body);
+  const quote = await quoteService.approveQuote(id, validatedData);
+  return res.json(quote);
+};
+
+// 11) Reject quote
+export const rejectQuote = async (req: Request, res: Response) => {
+  const id = quoteIdSchema.parse(req.params.id);
+  const validatedData = rejectQuoteSchema.parse(req.body);
+  const quote = await quoteService.rejectQuote(id, validatedData);
   return res.json(quote);
 };
