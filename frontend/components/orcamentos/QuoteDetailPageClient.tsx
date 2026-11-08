@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/icons";
+import { Field } from "@/components/ui/Field";
+import { Modal } from "@/components/ui/Modal";
 import { formatBRL, formatDateTime, formatQuantity } from "@/lib/money";
 import {
   QUOTE_ITEM_TYPE_META,
@@ -36,6 +38,10 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
 
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -90,18 +96,22 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const totalDiscountsCents = itemDiscountsCents + generalDiscountCents;
   const hasBothDiscountTypes = itemDiscountsCents > 0 && generalDiscountCents > 0;
   
-  async function handleStatusChange(action: "send" | "approve" | "reject", notes?: string) {
-    if (!quote) return;
+  async function handleStatusChange(
+    action: "send" | "approve" | "reject", 
+    notes?: string
+  ): Promise<boolean> {
+
+    if (!quote) return false;
     setIsActionLoading(true);
     setActionError("");
     setSuccessMessage("");
 
     try {
       let updated: Quote;
-      if (action == "send"){
+      if (action === "send"){
         updated = await sendQuoteApi(quote.id);
         setSuccessMessage("Orçamento marcado como enviado.");
-      } else if (action == "approve") {
+      } else if (action === "approve") {
         updated = await approveQuoteApi(quote.id, { decisionNotes: notes });
         setSuccessMessage("Orçamento aprovado com sucesso.");
       } else {
@@ -110,11 +120,28 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
         setSuccessMessage("Orçamento marcado como rejeitado.");
       }
       setQuote(updated);
+      return true;
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao processar ação.");
+      return false;
     } finally {
       setIsActionLoading(false);
     }
+  }
+
+  async function confirmReject(){
+    const reason = rejectReason.trim();
+
+    // Validates the reason before calling the API
+    if (!reason) {
+      setRejectError("Informe o motivo da rejeição.");
+      return;
+    }
+
+    const ok = await handleStatusChange("reject", reason);
+
+    //closes the modal only if the rejection was successful
+    if (ok) setShowRejectModal(false);
   }
 
   return (
@@ -187,17 +214,16 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
                 Aprovar
               </Button>
               <Button
-                variant="secondary"
-                isLoading={isActionLoading}
-                onClick={() => {
-                  const reason = window.prompt("Informe o motivo da rejeição:");
-                  if (reason !== null && reason.trim() !== "") {
-                    handleStatusChange("reject", reason.trim());
-                  }
-                }}
-              >
-                Rejeitar
-              </Button>
+              variant="secondary"
+              isLoading={isActionLoading}
+              onClick={() => {
+                setRejectReason(""); // clears the field of a previous rejection
+                setRejectError(""); // clears any old errors
+                setShowRejectModal(true); // opens the modal
+              }}
+            >
+              Rejeitar
+            </Button>
             </>
           ) : null}
         </div>
@@ -222,6 +248,34 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
           setSuccessMessage("Orçamento atualizado.");
         }}
       />
+
+      {/* Rejection Modal */}
+      <Modal
+        open={showRejectModal}
+        title="Rejeitar orçamento"
+        onClose={() => setShowRejectModal(false)}
+      >
+        <div className="flex flex-col gap-4">
+          <Field
+            id="reject-reason"
+            label="Motivo da rejeição"
+            value={rejectReason}
+            error={rejectError}
+            onChange={(e) => {
+              setRejectReason(e.target.value);
+              setRejectError(""); // some o erro quando a pessoa volta a digitar
+            }}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowRejectModal(false)}>
+              Cancelar
+            </Button>
+            <Button variant="primary" isLoading={isActionLoading} onClick={confirmReject}>
+              Confirmar rejeição
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
