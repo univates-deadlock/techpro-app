@@ -264,8 +264,7 @@ export const quoteItemSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(1, "Informe a descrição do item.")
-    .max(200, "Máximo de 200 caracteres."),
+    .min(1, "Informe a descrição do item."),
   quantity: z
     .number({error: "Informe uma quantidade válida."})
     .gt(0, "A quantidade inserida deve ser maior que zero.")
@@ -293,7 +292,7 @@ export const quoteSchema = z.object({
     .trim()
     .min(1, "Selecione um cliente.")
     .uuid("Identificador de cliente inválido."),
-  notes: z.string().trim().optional(),
+  notes: z.string().trim().nullable().optional(),
   discount: z
     .number({ error: "Informe um desconto geral em reais (R$) válido." })
     .min(0, "O desconto geral em R$ não pode ser negativo.")
@@ -307,3 +306,18 @@ export const quoteSchema = z.object({
 })
 
 export type QuoteInput = z.infer<typeof quoteSchema>;
+
+/** Approve decision: mirrors approveQuoteSchema in the API. */
+export const approveQuoteSchema = z.object({
+  decisionNotes: z.string().trim().nullable().optional(),
+  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida.").nullable().optional(),
+});
+
+/** Reject decision: a reason is required, mirroring the API. */
+export const rejectQuoteSchema = z.object({
+  decisionNotes: z.string().trim().min(1, "Informe o motivo da rejeição."),
+  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida.").nullable().optional(),
+});
+
+export type ApproveQuoteInput = z.infer<typeof approveQuoteSchema>;
+export type RejectQuoteInput = z.infer<typeof rejectQuoteSchema>;

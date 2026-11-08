@@ -301,9 +301,11 @@ export function OrcamentosPageQuote() {
 
       {isLoading ? (
         <p className="text-tp-text-muted">Carregando orçamentos...</p>
-      ) : filtered.length === 0 ? (
+      ) : error ? null : filtered.length === 0 ? (
         <div className="rounded-tp-md border border-dashed border-tp-border bg-white px-5 py-8 text-center text-sm text-tp-text-muted">
-          Nenhum orçamento encontrado.
+          {quotes.length === 0
+            ? "Nenhum orçamento cadastrado ainda."
+            : "Nenhum orçamento encontrado para a busca ou o filtro aplicado."}
         </div>
       ) : (
         <div className="tp-table-wrap">
