@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Modal } from "@/components/ui/Modal";
 import { formatBRL, formatCentsForInput, parseMoneyToCents } from "@/lib/money";
+import { quoteSchema } from "@/lib/schemas";
 import {
   createQuote,
   updateQuote,
@@ -348,6 +349,21 @@ function QuoteFormBody({
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      return;
+    }
+
+    // Final check against the shared schema (mirror of the backend)
+    const parsed = quoteSchema.safeParse({
+      clientId: formData.clientId,
+      notes: formData.notes.trim() ? formData.notes.trim() : null,
+      discount: (generalDiscountCents ?? 0) / 100,
+      items: itemsPayload.map(({ type, description, quantity, unitPrice, discount }) => ({
+        type, description, quantity, unitPrice, discount,
+      })),
+    });
+    if (!parsed.success) {
+      //Displays the first error message in the form alert
+      setFieldErrors({ form: parsed.error.issues[0]?.message ?? "Dados inválidos." });
       return;
     }
 
