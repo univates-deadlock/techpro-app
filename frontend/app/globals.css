@@ -282,3 +282,47 @@ svg {
 .tp-table .btn-tp:hover:not(:disabled) {
   background: var(--tp-neutral-100);
 }
+
+/* Print Quote Button */
+@media print {
+  /* system navegation hidden */
+  header, 
+  nav,
+  aside,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* body and background style A4 */
+  body{
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt;
+  }
+
+  /* Ensures that structure occupy the full width, without shadows  */
+  main,
+  .tp-table-wrap,
+  [class*="Card"] {
+    box-shadow: none !important;
+    border: 1px solid #d9d9d9 !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+/* table of items */
+  .tp-table {
+    width: 100% !important;
+    font-size: 10pt;
+  }
+
+  .tp-table th, 
+  .tp-table td {
+    padding: 6px 8px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+}
