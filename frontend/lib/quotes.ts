@@ -10,10 +10,6 @@
  * The API serializes the Prisma Decimal columns as strings ("123.45").
  * Money is converted to integer cents once, here at the boundary, so the
  * screens never do floating-point currency arithmetic.
- *
- * The API still has no endpoints to send a quote, record its decision or
- * upload evidence, and quotes have no sequential number yet — those join
- * lib/quotes.ts as the backend delivers them.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -248,21 +244,22 @@ export async function listQuoteClients(): Promise<QuoteClientOption[]> {
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json();
-    /* Zod validation errors arrive as { error, fields: [{ path, message }] }. */
+    /* Zod validation errors */
     if (Array.isArray(body?.fields) && body.fields.length > 0) {
       return body.fields
         .map((f: { path: string; message: string }) => f.message)
         .join(" ");
     }
     if (typeof body?.error === "string") return body.error;
+    if (typeof body?.message === "string") return body.message;
   } catch {
-    /* Body was not JSON; fall through to the status-based message. */
+    /* Body não é JSON */
   }
   if (res.status === 401) return "Sessão expirada. Entre novamente.";
   if (res.status === 403) {
     return "Acesso negado: seu perfil não pode gerenciar orçamentos.";
   }
-  return fallback;
+  return `${fallback} (Status HTTP: ${res.status})`;
 }
 
 /** Converts a serialized Decimal ("123.45" or 123.45) to integer cents. */
@@ -372,6 +369,65 @@ export async function getQuote(id: string): Promise<Quote | null> {
   if (res.status === 404) return null;
   if (!res.ok) {
     throw new Error(await readError(res, "Não foi possível carregar o orçamento."));
+  }
+  return mapQuote((await res.json()) as RawQuote);
+}
+
+export async function sendQuoteApi(id: string): Promise<Quote> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/quotes/${id}/send`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+  if (!res.ok) {
+    throw new Error(await readError(res, "Não foi possível enviar o orçamento."));
+  }
+  return mapQuote((await res.json()) as RawQuote);
+}
+
+export async function approveQuoteApi(
+  id: string,
+  payload: { decisionNotes?: string; decisionEvidenceUrl?: string } = {}
+): Promise<Quote> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/quotes/${id}/approve`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+  if (!res.ok) {
+    throw new Error(await readError(res, "Não foi possível aprovar o orçamento."));
+  }
+  return mapQuote((await res.json()) as RawQuote);
+}
+
+export async function rejectQuoteApi(
+  id: string,
+  payload: { decisionNotes: string; decisionEvidenceUrl?: string }
+): Promise<Quote> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/quotes/${id}/reject`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+  if (!res.ok) {
+    throw new Error(await readError(res, "Não foi possível rejeitar o orçamento."));
   }
   return mapQuote((await res.json()) as RawQuote);
 }

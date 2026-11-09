@@ -16,6 +16,9 @@ router.post("/", QuoteController.createQuote);
 router.get("/:id", QuoteController.getQuoteById);
 router.patch("/:id", QuoteController.updateQuote);
 router.delete("/:id", QuoteController.deleteQuote);
+router.post("/:id/send", QuoteController.sendQuote);
+router.post("/:id/approve", QuoteController.approveQuote);
+router.post("/:id/reject", QuoteController.rejectQuote);
 
 //Quote items
 router.post("/:id/items", QuoteController.addQuoteItem);

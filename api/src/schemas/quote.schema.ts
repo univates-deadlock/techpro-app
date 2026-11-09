@@ -78,8 +78,21 @@ export const listQuotesQuerySchema = z.object({
   status: quoteStatusEnum.optional(),
 });
 
+export const rejectQuoteSchema = z.strictObject({
+  decisionNotes: z.string().trim().min(1, "Informe o motivo da rejeição"),
+  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida").nullable().optional(),
+});
+
+export const approveQuoteSchema = z.strictObject({
+  decisionNotes: z.string().trim().nullable().optional(),
+  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida").nullable().optional(),
+});
+
+
 export type CreateQuoteInput = z.infer<typeof createQuoteSchema>;
 export type UpdateQuoteInput = z.infer<typeof updateQuoteSchema>;
 export type CreateQuoteItemInput = z.infer<typeof createQuoteItemSchema>;
 export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
 export type ListQuotesQuery = z.infer<typeof listQuotesQuerySchema>;
+export type RejectQuoteInput = z.infer<typeof rejectQuoteSchema>;
+export type ApproveQuoteInput = z.infer<typeof approveQuoteSchema>;

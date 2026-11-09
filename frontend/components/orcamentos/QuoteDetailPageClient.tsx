@@ -9,12 +9,17 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/icons";
+import { Field } from "@/components/ui/Field";
+import { Modal } from "@/components/ui/Modal";
 import { formatBRL, formatDateTime, formatQuantity } from "@/lib/money";
 import {
   QUOTE_ITEM_TYPE_META,
   QUOTE_STATUS_META,
   getQuote,
   isQuoteOpen,
+  sendQuoteApi,
+  approveQuoteApi,
+  rejectQuoteApi,
   type Quote,
 } from "@/lib/quotes";
 
@@ -23,6 +28,20 @@ import {
  * discounts and general discount), history, and editing while open.
  */
 
+// Texts - action needs to be confirmed by the user before proceeding
+const CONFIRM_COPY = {
+  send: {
+    title: "Marcar como enviado",
+    message: "Confirma que este orçamento foi enviado ao cliente? Ele ficará aguardando decisão.",
+    confirmLabel: "Confirmar envio",
+  },
+  approve: {
+    title: "Aprovar orçamento",
+    message: "Confirmar a aprovação? Depois disso o orçamento não poderá mais ser editado.",
+    confirmLabel: "Confirmar aprovação",
+  },
+} as const;
+
 export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const router = useRouter();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -30,6 +49,15 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+
+  const [pendingAction, setPendingAction] = useState<"send" | "approve" | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,15 +111,77 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
   const generalDiscountCents = quote.discountCents;
   const totalDiscountsCents = itemDiscountsCents + generalDiscountCents;
   const hasBothDiscountTypes = itemDiscountsCents > 0 && generalDiscountCents > 0;
+  
+  async function handleStatusChange(
+    action: "send" | "approve" | "reject", 
+    notes?: string
+  ): Promise<boolean> {
+
+    if (!quote) return false;
+    setIsActionLoading(true);
+    setActionError("");
+    setSuccessMessage("");
+
+    try {
+      let updated: Quote;
+      if (action === "send"){
+        updated = await sendQuoteApi(quote.id);
+        setSuccessMessage("Orçamento marcado como enviado.");
+      } else if (action === "approve") {
+        updated = await approveQuoteApi(quote.id, { decisionNotes: notes });
+        setSuccessMessage("Orçamento aprovado com sucesso.");
+      } else {
+        if (!notes) throw new Error("Informe o motivo da rejeição.");
+        updated = await rejectQuoteApi(quote.id, { decisionNotes: notes });
+        setSuccessMessage("Orçamento marcado como rejeitado.");
+      }
+      setQuote(updated);
+      return true;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Erro ao processar ação.");
+      return false;
+    } finally {
+      setIsActionLoading(false);
+    }
+  }
+
+  async function confirmReject(){
+    const reason = rejectReason.trim();
+
+    // Validates the reason before calling the API
+    if (!reason) {
+      setRejectError("Informe o motivo da rejeição.");
+      return;
+    }
+
+    const ok = await handleStatusChange("reject", reason);
+
+    //closes the modal only if the rejection was successful
+    if (ok) setShowRejectModal(false);
+  }
+
+  async function confirmPendingAction() {
+    if (!pendingAction) return;
+    await handleStatusChange(pendingAction);
+    // Always close it: if an error occurred, a red alert appears at the top of the page
+    setPendingAction(null);
+  }
 
   return (
     <div>
+      {/* Error alert (aprove, reject, sent) */}
+      {actionError ? (
+        <div className="mb-4 no-print">
+          <Alert tone="error">{actionError}</Alert>
+        </div>
+      ) : null}
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <button
             type="button"
             onClick={() => router.push("/orcamentos")}
-            className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tp-text-body hover:text-tp-text-main"
+            className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-tp-text-body hover:text-tp-text-main no-print"
           >
             <Icon name="back" size={16} />
             Orçamentos
@@ -108,21 +198,62 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
           <p className="mt-1 text-sm text-tp-text-muted">{quote.clientName}</p>
         </div>
 
-        {isQuoteOpen(quote.status) ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setSuccessMessage("");
-              setShowEditModal(true);
-            }}
-          >
-            Editar orçamento
+        {/* Grupo de Ações do Orçamento (Exportar PDF, Editar e Alterar Status) */}
+        <div className="flex flex-wrap items-center gap-2 no-print">
+          <Button variant="secondary" onClick={() => window.print()}>
+            <Icon name="paperclip" size={16} />
+            Exportar PDF
           </Button>
-        ) : null}
+
+          {isQuoteOpen(quote.status) ? (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSuccessMessage("");
+                setShowEditModal(true);
+              }}
+            >
+              Editar orçamento
+            </Button>
+          ) : null}
+
+          {quote.status === "DRAFT" ? (
+            <Button
+              variant="primary"
+              isLoading={isActionLoading}
+              onClick={() => setPendingAction("send")}
+            >
+              Marcar como Enviado
+            </Button>
+          ) : null}
+
+          {quote.status === "SENT" ? (
+            <>
+              <Button
+                variant="primary"
+                isLoading={isActionLoading}
+                onClick={() => setPendingAction("approve")}
+              >
+                Aprovar
+              </Button>
+              <Button
+              variant="secondary"
+              isLoading={isActionLoading}
+              onClick={() => {
+                setRejectReason(""); // clears the field of a previous rejection
+                setRejectError(""); // clears any old errors
+                setShowRejectModal(true); // opens the modal
+              }}
+            >
+              Rejeitar
+            </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {successMessage ? (
-        <div className="mb-6">
+        <div className="mb-6 no-print">
           <Alert tone="success">{successMessage}</Alert>
         </div>
       ) : null}
@@ -140,6 +271,60 @@ export function QuoteDetailPageClient({ quoteId }: { quoteId: string }) {
           setSuccessMessage("Orçamento atualizado.");
         }}
       />
+
+      {/* Rejection Modal */}
+      <Modal
+        open={showRejectModal}
+        title="Rejeitar orçamento"
+        onClose={() => setShowRejectModal(false)}
+      >
+        <div className="flex flex-col gap-4">
+          <Field
+            id="reject-reason"
+            label="Motivo da rejeição"
+            value={rejectReason}
+            error={rejectError}
+            onChange={(e) => {
+              setRejectReason(e.target.value);
+              setRejectError(""); // some o erro quando a pessoa volta a digitar
+            }}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowRejectModal(false)}>
+              Cancelar
+            </Button>
+            <Button variant="primary" isLoading={isActionLoading} onClick={confirmReject}>
+              Confirmar rejeição
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmation of sending/approving */}
+      <Modal
+        open={pendingAction !== null}
+        title={pendingAction ? CONFIRM_COPY[pendingAction].title : ""}
+        onClose={() => (isActionLoading ? null : setPendingAction(null))}
+        dismissible={!isActionLoading}
+      >
+        {pendingAction ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-tp-text-body">{CONFIRM_COPY[pendingAction].message}</p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                disabled={isActionLoading}
+                onClick={() => setPendingAction(null)}
+              >
+                Cancelar
+              </Button>
+              <Button variant="primary" isLoading={isActionLoading} onClick={confirmPendingAction}>
+                {CONFIRM_COPY[pendingAction].confirmLabel}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
