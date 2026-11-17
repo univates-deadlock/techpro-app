@@ -323,4 +323,168 @@ describe("Quote integration tests", () => {
       expect(persisted.body.items[0].description).toBe("Instalação de equipamento");
     });
   });
+
+  describe("Quote status transitions", () => {
+    const createDraft = async (items = [sampleItem]) => {
+      const response = await agentWithCookie(admin.cookie)
+        .post("/api/quotes")
+        .send({ clientId, items })
+        .expect(201);
+
+      return response.body.id as string;
+    };
+
+    it("records the sender from the active session and keeps SENT quotes editable", async () => {
+      const id = await createDraft();
+      const sent = await agentWithCookie(planning.cookie)
+        .post(`/api/quotes/${id}/send`)
+        .expect(200);
+
+      expect(sent.body).toMatchObject({
+        status: "SENT",
+        createdBy: admin.id,
+        sentAt: expect.any(String),
+        sentBy: planning.id,
+        decidedAt: null,
+        decidedBy: null,
+      });
+
+      await agentWithCookie(admin.cookie).post(`/api/quotes/${id}/send`).expect(409);
+      await agentWithCookie(admin.cookie)
+        .patch(`/api/quotes/${id}`)
+        .send({ notes: "Atualizado após o envio" })
+        .expect(200);
+      await agentWithCookie(admin.cookie)
+        .delete(`/api/quotes/${id}/items/${sent.body.items[0].id}`)
+        .expect(409);
+
+      const persisted = await agentWithCookie(admin.cookie).get(`/api/quotes/${id}`).expect(200);
+      expect(persisted.body).toMatchObject({
+        sentAt: sent.body.sentAt,
+        sentBy: planning.id,
+        notes: "Atualizado após o envio",
+      });
+    });
+
+    it("rejects sending an empty draft and leaves its audit fields unset", async () => {
+      const id = await createDraft([]);
+      await agentWithCookie(admin.cookie).post(`/api/quotes/${id}/send`).expect(409);
+
+      const persisted = await agentWithCookie(admin.cookie).get(`/api/quotes/${id}`).expect(200);
+      expect(persisted.body).toMatchObject({ status: "DRAFT", sentAt: null, sentBy: null });
+    });
+
+    it.each([
+      { action: "approve", status: "APPROVED" },
+      { action: "reject", status: "REJECTED" },
+      { action: "expire", status: "EXPIRED" },
+    ])("records $status once and freezes the decided quote", async ({ action, status }) => {
+      const id = await createDraft();
+      const payload = {
+        decidedAt: "2026-11-10T14:30:00-03:00",
+        decisionNotes: "  Retorno registrado  ",
+      };
+      const decisionPath = `/api/quotes/${id}/${action}`;
+      await agentWithCookie(planning.cookie).post(decisionPath).send(payload).expect(409);
+
+      const sent = await agentWithCookie(admin.cookie).post(`/api/quotes/${id}/send`).expect(200);
+      const decision = await agentWithCookie(planning.cookie).post(decisionPath).send(payload).expect(200);
+
+      const audit = {
+        status,
+        sentAt: sent.body.sentAt,
+        sentBy: admin.id,
+        decidedAt: "2026-11-10T17:30:00.000Z",
+        decidedBy: planning.id,
+        decisionNotes: "Retorno registrado",
+        decisionEvidenceUrl: null,
+      };
+      expect(decision.body).toMatchObject(audit);
+
+      await agentWithCookie(admin.cookie).post(decisionPath).send(payload).expect(409);
+      await agentWithCookie(admin.cookie)
+        .patch(`/api/quotes/${id}`)
+        .send({ notes: "Alteração indevida" })
+        .expect(409);
+      await agentWithCookie(admin.cookie).post(`/api/quotes/${id}/items`).send(sampleItem).expect(409);
+      await agentWithCookie(admin.cookie).delete(`/api/quotes/${id}`).expect(409);
+
+      const persisted = await agentWithCookie(admin.cookie).get(`/api/quotes/${id}`).expect(200);
+      expect(persisted.body).toMatchObject(audit);
+    });
+
+    it.each(["send", "approve", "reject", "expire"])("protects the %s endpoint", async (action) => {
+      const path = `/api/quotes/${randomUUID()}/${action}`;
+      const payload = action === "reject" ? { decisionNotes: "Motivo" } : {};
+      await request(app).post(path).send(payload).expect(401);
+      await agentWithCookie(technician.cookie).post(path).send(payload).expect(403);
+      await agentWithCookie(admin.cookie).post(path).send(payload).expect(404);
+    });
+
+    it("validates IDs and decision data and accepts approval with no body", async () => {
+      const id = await createDraft();
+      const path = `/api/quotes/${id}`;
+      await agentWithCookie(admin.cookie).post("/api/quotes/invalid/send").expect(400);
+      await agentWithCookie(admin.cookie).post(`${path}/send`).send({ sentBy: planning.id }).expect(400);
+      await agentWithCookie(admin.cookie).post(`${path}/send`).expect(200);
+
+      await agentWithCookie(admin.cookie).post(`${path}/reject`).send({ decisionNotes: "   " }).expect(400);
+      await agentWithCookie(admin.cookie)
+        .post(`${path}/expire`)
+        .send({ decidedAt: "2026-11-10T14:30:00" })
+        .expect(400);
+      await agentWithCookie(admin.cookie).post(`${path}/approve`).send({ decidedBy: planning.id }).expect(400);
+      await agentWithCookie(admin.cookie)
+        .post(`${path}/approve`)
+        .send({ decisionEvidenceUrl: "https://example.test/evidence.pdf" })
+        .expect(400);
+
+      const approved = await agentWithCookie(admin.cookie).post(`${path}/approve`).expect(200);
+      expect(approved.body).toMatchObject({
+        status: "APPROVED",
+        decidedAt: expect.any(String),
+        decidedBy: admin.id,
+        decisionNotes: null,
+      });
+    });
+
+    it("allows only one concurrent decision to persist", async () => {
+      const id = await createDraft();
+      const path = `/api/quotes/${id}`;
+      await agentWithCookie(admin.cookie).post(`${path}/send`).expect(200);
+
+      const responses = await Promise.all([
+        agentWithCookie(admin.cookie).post(`${path}/approve`).send({ decisionNotes: "Aceitou" }),
+        agentWithCookie(planning.cookie).post(`${path}/reject`).send({ decisionNotes: "Recusou" }),
+      ]);
+
+      expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+      const persisted = await agentWithCookie(admin.cookie).get(path).expect(200);
+      if (responses[0].status === 200) {
+        expect(persisted.body).toMatchObject({
+          status: "APPROVED", decidedBy: admin.id, decisionNotes: "Aceitou",
+        });
+      } else {
+        expect(persisted.body).toMatchObject({
+          status: "REJECTED", decidedBy: planning.id, decisionNotes: "Recusou",
+        });
+      }
+    });
+
+    it("serializes sending against removal of the last item", async () => {
+      const id = await createDraft();
+      const path = `/api/quotes/${id}`;
+      const draft = await agentWithCookie(admin.cookie).get(path).expect(200);
+
+      const [send, remove] = await Promise.all([
+        agentWithCookie(admin.cookie).post(`${path}/send`),
+        agentWithCookie(planning.cookie).delete(`${path}/items/${draft.body.items[0].id}`),
+      ]);
+
+      expect([send.status, remove.status].sort()).toEqual([200, 409]);
+      const persisted = await agentWithCookie(admin.cookie).get(path).expect(200);
+      expect(persisted.body.status).toBe(send.status === 200 ? "SENT" : "DRAFT");
+      expect(persisted.body.items).toHaveLength(send.status === 200 ? 1 : 0);
+    });
+  });
 });

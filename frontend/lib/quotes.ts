@@ -392,7 +392,7 @@ export async function sendQuoteApi(id: string): Promise<Quote> {
 
 export async function approveQuoteApi(
   id: string,
-  payload: { decisionNotes?: string; decisionEvidenceUrl?: string } = {}
+  payload: { decisionNotes?: string; decidedAt?: string } = {}
 ): Promise<Quote> {
   let res: Response;
   try {
@@ -413,7 +413,7 @@ export async function approveQuoteApi(
 
 export async function rejectQuoteApi(
   id: string,
-  payload: { decisionNotes: string; decisionEvidenceUrl?: string }
+  payload: { decisionNotes: string; decidedAt?: string }
 ): Promise<Quote> {
   let res: Response;
   try {

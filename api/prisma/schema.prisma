@@ -87,6 +87,8 @@ model User {
   isActive      Boolean  @default(true)  @map("is_active")
 
   createdQuotes    Quote[]           @relation("QuoteCreatedBy")
+  sentQuotes       Quote[]           @relation("QuoteSentBy")
+  decidedQuotes    Quote[]           @relation("QuoteDecidedBy")
   createdServices  Service[]         @relation("ServiceCreatedBy")
   technicianVisits VisitTechnician[]
   sessions         Session[]
@@ -182,7 +184,9 @@ model Quote {
   createdBy String  @map("created_by")
 
   sentAt              DateTime? @map("sent_at") @db.Timestamp(3)
+  sentBy              String?   @map("sent_by")
   decidedAt           DateTime? @map("decided_at") @db.Timestamp(3)
+  decidedBy           String?   @map("decided_by")
   decisionNotes       String?   @map("decision_notes") @db.Text
   decisionEvidenceUrl String?   @map("decision_evidence_url") @db.VarChar(500)
 
@@ -191,6 +195,8 @@ model Quote {
 
   client  Client @relation("ClientQuote", fields: [clientId], references: [id])
   creator User   @relation("QuoteCreatedBy", fields: [createdBy], references: [id])
+  sender  User?  @relation("QuoteSentBy", fields: [sentBy], references: [id], onDelete: Restrict)
+  decider User?  @relation("QuoteDecidedBy", fields: [decidedBy], references: [id], onDelete: Restrict)
 
   items   QuoteItem[]
   service Service?
