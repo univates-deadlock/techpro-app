@@ -32,7 +32,8 @@ Resumo auditado da branch `main`, distinguindo a entrega real do escopo planejad
 
 ---
 
-- **[API de serviços (branch em revisão)](service-api.md)** — contratos HTTP, regras de vínculo com orçamento e testes críticos do PR #112; não implica publicação na `main`.
+- **[API de serviços](service-api.md)** — contratos HTTP, regras de vínculo com orçamento e testes críticos.
+- **[Fluxo de decisões de orçamento](quote-workflow.md)** — contrato da interface, pré-condições e teste de integração das ações críticas.
 
 ---
 
