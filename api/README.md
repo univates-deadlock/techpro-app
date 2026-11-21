@@ -439,3 +439,7 @@ No workflow `.github/workflows/ci.yml`, o job `api` executa `npm test` após as 
 - **403 no CRUD:** confira perfil `ADMIN` e `isActive=true`.
 - **429 na demonstração:** aguarde a janela do rate limiter; ele guarda contadores
   em memória e não é distribuído entre várias instâncias.
+
+## Serviços — implementação em revisão
+
+A branch `feat/api-services` adiciona endpoints `/api/services` para serviços diretos ou vinculados a orçamentos aprovados. O contrato completo, regras de status e testes de integração estão em [`docs/service-api.md`](../docs/service-api.md). Esta seção descreve o PR #112 ainda não mesclado, não uma funcionalidade já implantada.
