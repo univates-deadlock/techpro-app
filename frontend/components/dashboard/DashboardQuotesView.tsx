@@ -19,8 +19,8 @@ import {
 /**
  * Operational home for ADMIN and PLANNING: what needs attention, not shortcuts.
  *
- * All numbers derive from GET /api/quotes — there is no dedicated dashboard
- * endpoint yet, so the screen composes the indicators from the quote list.
+ * Quote cards use GET /api/quotes; operational indicators use GET /api/dashboard.
+ * Both sources require an authenticated ADMIN or PLANNING session.
  */
 export function DashboardQuotesView() {
   const [quotes, setQuotes] = useState<QuoteListItem[] | null>(null);
