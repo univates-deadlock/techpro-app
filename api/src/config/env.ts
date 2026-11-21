@@ -8,6 +8,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: httpUrl.default("http://localhost:4000"),
   FE_BASE_URL: httpUrl.default("http://localhost:3000"),
+  EVIDENCE_DIR: z.string().min(1).default("./evidence"),
 });
 
 const parsed = envSchema.safeParse(process.env);

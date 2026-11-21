@@ -38,6 +38,7 @@ services:
       - ./api:/app
       - api_node_modules:/app/node_modules
       - api_generated:/app/generated
+      - evidence_data:/app/evidence
     depends_on:
       db:
         condition: service_healthy
@@ -79,6 +80,7 @@ volumes:
   postgres_data:
   api_node_modules:
   api_generated:
+  evidence_data:
   frontend_node_modules:
   frontend_next:
 
