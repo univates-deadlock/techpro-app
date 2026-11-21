@@ -69,9 +69,6 @@ Antes de habilitar anexos:
 4. Definir `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`,
    `S3_ACCESS_KEY_ID` e `S3_SECRET_ACCESS_KEY` no `api/.env`
    **não versionado** da VM. Manter o arquivo em modo 600.
-5. Configurar backup externo do armazenamento de objetos e ensaiar
-   restauração. Um volume na mesma VM não elimina risco de perda.
-
 Se faltar configuração, o restante da aplicação continua disponível,
 mas anexos retornam 503. Nunca colocar valores reais em PRs, logs,
 secrets de frontend ou no Compose versionado.
