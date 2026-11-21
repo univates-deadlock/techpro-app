@@ -1,25 +1,43 @@
 # Evidências de aprovação de orçamentos (RF23 / RNF08)
 
-Esta API permite anexar uma evidência opcional **depois** de o orçamento estar
-`APPROVED`. O fluxo de aprovação continua funcional sem arquivo. As rotas
+A API mantém o anexo opcional **depois** da aprovação do orçamento.
+O fluxo de aprovação pode ser concluído sem arquivo. Todas as rotas
 exigem sessão ativa e perfil `ADMIN` ou `PLANNING`.
 
-- `POST /api/quotes/:id/evidence`: envie o próprio arquivo como corpo binário
-  (não `multipart/form-data`), com `Content-Type` igual a
-  `application/pdf`, `image/png` ou `image/jpeg`. O limite é 10 MiB.
-  A resposta 201 é `{ "url": "/api/quotes/:id/evidence/:filename" }`.
-- `GET /api/quotes/:id/evidence/:filename`: acessa o anexo apenas com
-  cookie de sessão autorizado. A URL está guardada em
-  `Quote.decisionEvidenceUrl`. Acesso anônimo retorna 401; técnico, 403.
-- Uma aprovação admite um arquivo. Reenvio retorna 409, sem substituir
-  silenciosamente uma evidência existente. Arquivo com assinatura incompatível
-  com o tipo declarado é rejeitado.
-- O backend gera o nome do arquivo; nomes de clientes não são usados como paths.
-  Os arquivos **não** são publicados em rota estática.
+- `POST /api/quotes/:id/evidence`: corpo binário (não multipart),
+  `Content-Type` igual a `application/pdf`, `image/png` ou
+  `image/jpeg`, limite de **10 MiB**. Responde 201 com
+  `{ "url": "/api/quotes/:id/evidence/:filename" }`.
+- `GET /api/quotes/:id/evidence/:filename`: lê o objeto privado no
+  RustFS e retorna o conteúdo **somente depois** de validar a sessão
+  e a referência registrada no orçamento. Anônimo: 401; técnico: 403.
+- O usuário não fornece bucket, chave nem filename do armazenamento.
+  O nome é gerado pelo backend, e as assinaturas de arquivo são
+  verificadas antes de enviar o conteúdo ao S3.
+- Evidência duplicada ou status diferente de `APPROVED`: 409.
+  Erro de armazenamento: 503, sem expor credenciais ou mensagens internas.
+  Limite ultrapassado: 413.
 
-## Consumo pelo frontend
+## Fluxo e persistência
 
-Exemplo com a `File` escolhida no input de arquivo:
+```text
+Frontend → API Express (cookie + ADMIN/PLANNING)
+         → valida arquivo e status APPROVED
+         → RustFS via API S3 (bucket privado)
+         → PostgreSQL (chave quotes/<quoteId>/<uuid>.<ext>)
+GET /api/quotes/:id/evidence/:filename
+         → valida autorização e compara chave no PostgreSQL
+         → GetObject do S3 → arquivo para usuário autenticado
+```
+
+O campo legado `Quote.decisionEvidenceUrl` é reutilizado para a
+**chave do objeto**, não para uma URL pública. A rota interna de download
+permanece estável para o frontend; não use URLs pré-assinadas nem exponha
+as portas do RustFS ao navegador.
+
+## Frontend
+
+Exemplo com um `File` já selecionado no formulário:
 
 ```ts
 const response = await fetch(apiBase + "/api/quotes/" + quoteId + "/evidence", {
@@ -30,17 +48,37 @@ const response = await fetch(apiBase + "/api/quotes/" + quoteId + "/evidence", {
 });
 ```
 
-Adicione `apiBase` à URL relativa retornada para abrir a evidência.
-Não use `multipart/form-data`; não inclua um token no endereço.
+A URL relativa recebida deve ser aberta com sessão autenticada. O frontend
+da issue #67 deve chamar o upload após a aprovação confirmada, pois
+anexos de orçamentos em rascunho ou enviados são rejeitados.
 
-## Persistência
+## Provisionamento e segurança
 
-O volume nomeado `evidence_data` está montado em `/app/evidence` na API,
-independente do ciclo de vida do container. **Não** execute
-`docker compose down -v` em produção. Fora do Compose, configure
-`EVIDENCE_DIR` para um diretório privado, persistente, acessível somente pela
-API. Inclua o volume de evidências no plano de backup, além do PostgreSQL.
+O RustFS compartilhado está no draft PR do repositório privado
+`univates-deadlock/deadlock-deploy`. Na VM, a API utiliza
+`http://deadlock-rustfs:9000` via `deadlock_edge`, sem Caddy,
+porta pública ou exposição do console.
 
-Antes de disponibilizar a funcionalidade, validar em ambiente isolado:
-upload, autorização, retorno 413 para limite ultrapassado e persistência
-após recriação de container.
+Antes de habilitar anexos:
+
+1. Provisionar o RustFS com credenciais administrativas únicas e fortes.
+2. Criar o bucket **privado** `techpro-evidences`.
+3. Criar uma conta de serviço exclusiva para a TechPro, autorizada
+   somente a `s3:GetObject`, `s3:PutObject` e `s3:DeleteObject`
+   nesse bucket (sem permissões de listagem global ou IAM).
+4. Definir `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`,
+   `S3_ACCESS_KEY_ID` e `S3_SECRET_ACCESS_KEY` no `api/.env`
+   **não versionado** da VM. Manter o arquivo em modo 600.
+5. Configurar backup externo do armazenamento de objetos e ensaiar
+   restauração. Um volume na mesma VM não elimina risco de perda.
+
+Se faltar configuração, o restante da aplicação continua disponível,
+mas anexos retornam 503. Nunca colocar valores reais em PRs, logs,
+secrets de frontend ou no Compose versionado.
+
+## Testes
+
+Os testes de integração iniciam um RustFS 1.0.4 e um PostgreSQL 17
+**descartáveis** no Docker. Eles cobrem S3 Put/Get, persistência da
+chave, status, RBAC, formato e tamanho. Nenhum teste conecta ao bucket
+de produção. `npm test --prefix api` exige Docker.

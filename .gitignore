@@ -10,4 +10,3 @@ api/generated/
 .env
 .env.*
 !.env.example
-api/evidence/
