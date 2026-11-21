@@ -48,7 +48,7 @@ jobs:
 
   sync-s3-lock:
     name: Resolve S3 lockfile
-    if: github.event_name == 'push' && github.event.head_commit.message == 'ci: resolve S3 dependency lockfile'
+    if: "github.event_name == 'push' && github.event.head_commit.message == 'ci: resolve S3 dependency lockfile'"
     runs-on: ubuntu-latest
     permissions:
       contents: write
