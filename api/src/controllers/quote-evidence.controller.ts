@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import { env } from "../config/env.js";
 import { quoteIdSchema } from "../schemas/quote.schema.js";
+import {
+  deleteEvidenceObject,
+  putEvidenceObject,
+  readEvidenceObject,
+} from "../services/quote-evidence.storage.js";
 import { AppError } from "../utils/AppError.js";
 
-const acceptedFormats = {
+const formats = {
   "application/pdf": {
     extension: "pdf",
     signature: Buffer.from("%PDF-"),
@@ -21,35 +23,39 @@ const acceptedFormats = {
     signature: Buffer.from([0xff, 0xd8, 0xff]),
   },
 } as const;
-type EvidenceMime = keyof typeof acceptedFormats;
-const mimeByExtension: Record<string, EvidenceMime> = {
-  pdf: "application/pdf", png: "image/png", jpg: "image/jpeg",
+type EvidenceMime = keyof typeof formats;
+const typesByExtension: Record<string, EvidenceMime> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
 };
-
 const storedName = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(pdf|png|jpg)$/;
+
+const objectKey = (quoteId: string, filename: string) => "quotes/" + quoteId + "/" + filename;
+const downloadUrl = (quoteId: string, filename: string) =>
+  "/api/quotes/" + quoteId + "/evidence/" + filename;
 
 async function getQuote(id: string) {
   const quote = await prisma.quote.findUnique({
     where: { id },
-    select: { id: true, status: true, decisionEvidenceUrl: true },
+    select: { status: true, decisionEvidenceUrl: true },
   });
   if (!quote) throw new AppError("Orçamento não encontrado", 404);
   return quote;
 }
 
-/** Raw binary upload avoids multipart dependencies and client-controlled file paths. */
 export const upload = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
   const contentType = (req.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase();
-  if (!(contentType in acceptedFormats)) {
+  if (!Object.prototype.hasOwnProperty.call(formats, contentType)) {
     throw new AppError("Formato não aceito. Envie PDF, PNG ou JPEG", 415);
   }
-  const format = acceptedFormats[contentType as EvidenceMime];
+  const format = formats[contentType as EvidenceMime];
   const bytes: unknown = req.body;
   if (!Buffer.isBuffer(bytes) || bytes.length === 0 ||
       bytes.length > 10 * 1024 * 1024 ||
       !bytes.subarray(0, format.signature.length).equals(format.signature)) {
-    throw new AppError("Arquivo inválido ou maior que 10 MB", 400);
+    throw new AppError("Arquivo inválido ou maior que 10 MiB", 400);
   }
 
   const quote = await getQuote(id);
@@ -61,24 +67,26 @@ export const upload = async (req: Request, res: Response) => {
   }
 
   const filename = randomUUID() + "." + format.extension;
-  const path = join(env.EVIDENCE_DIR, filename);
-  const url = "/api/quotes/" + id + "/evidence/" + filename;
-  await mkdir(env.EVIDENCE_DIR, { recursive: true, mode: 0o700 });
-  await writeFile(path, bytes, { flag: "wx", mode: 0o600 });
+  const key = objectKey(id, filename);
+  await putEvidenceObject(key, bytes, contentType);
 
   try {
-    // Compare-and-set prevents concurrent uploads from overwriting evidence.
     const updated = await prisma.quote.updateMany({
       where: { id, status: "APPROVED", decisionEvidenceUrl: null },
-      data: { decisionEvidenceUrl: url },
+      data: { decisionEvidenceUrl: key },
     });
     if (updated.count !== 1) throw new AppError("A evidência já foi alterada", 409);
   } catch (error) {
-    await unlink(path).catch(() => undefined);
+    // The upload is not committed if the DB link could not be saved.
+    try {
+      await deleteEvidenceObject(key);
+    } catch {
+      console.error("[EVIDENCE_STORAGE]: Failed to clean up orphaned object");
+    }
     throw error;
   }
 
-  return res.status(201).json({ url });
+  return res.status(201).json({ url: downloadUrl(id, filename) });
 };
 
 export const download = async (req: Request, res: Response) => {
@@ -87,26 +95,16 @@ export const download = async (req: Request, res: Response) => {
   if (typeof filename !== "string" || !storedName.test(filename)) {
     throw new AppError("Evidência não encontrada", 404);
   }
-
   const quote = await getQuote(id);
-  const url = "/api/quotes/" + id + "/evidence/" + filename;
-  if (quote.decisionEvidenceUrl !== url) {
+  const key = objectKey(id, filename);
+  if (quote.decisionEvidenceUrl !== key) {
     throw new AppError("Evidência não encontrada", 404);
   }
 
-  let file: Buffer;
-  try {
-    file = await readFile(join(env.EVIDENCE_DIR, filename));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new AppError("Evidência indisponível", 404);
-    }
-    throw error;
-  }
-
+  const file = await readEvidenceObject(key);
   const extension = filename.split(".").pop() ?? "";
   return res
-    .type(mimeByExtension[extension])
+    .type(typesByExtension[extension])
     .set("Cache-Control", "private, no-store")
     .set("X-Content-Type-Options", "nosniff")
     .send(file);
