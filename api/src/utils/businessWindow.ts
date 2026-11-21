@@ -29,3 +29,14 @@ export function businessWindow(now: Date, days: number) {
   };
 }
 
+
+// PostgreSQL DATE values are stored as calendar dates, without a time of day.
+// Use UTC midnight of each local calendar date when comparing @db.Date columns.
+export function warrantyDateBounds(window: ReturnType<typeof businessWindow>) {
+  const toUtcDate = (instant: Date) =>
+    new Date(dateFormat.format(instant) + "T00:00:00.000Z");
+  return {
+    start: toUtcDate(window.start),
+    endExclusive: toUtcDate(window.endExclusive),
+  };
+}

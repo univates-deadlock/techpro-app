@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import app from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
-import { businessWindow } from "../src/utils/businessWindow.js";
+import { businessWindow, warrantyDateBounds } from "../src/utils/businessWindow.js";
 import { agentWithCookie, createAuthenticatedUser, type AuthContext } from "./helpers.js";
 
 describe("Aftercare endpoints and operational indicators", () => {
@@ -143,7 +143,9 @@ describe("Aftercare endpoints and operational indicators", () => {
   });
 
   it("counts nearby and overdue items without marking completed revisions as pending", async () => {
-    const { start } = businessWindow(new Date(), 14);
+    const window = businessWindow(new Date(), 14);
+    const { start } = window;
+    const warrantyToday = warrantyDateBounds(window).start;
     const overdue = new Date(start.getTime() - 86_400_000);
     const upcoming = new Date(start.getTime() + 86_400_000);
     const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
@@ -156,6 +158,7 @@ describe("Aftercare endpoints and operational indicators", () => {
     await prisma.warranty.createMany({ data: [
       { serviceId, type: "SERVICE", startsAt: new Date("2020-01-01T00:00:00Z"), endsAt: new Date(dateOnly(overdue) + "T00:00:00Z") },
       { serviceId, type: "SERVICE", startsAt: new Date("2020-01-01T00:00:00Z"), endsAt: new Date(dateOnly(upcoming) + "T00:00:00Z") },
+      { serviceId, type: "SERVICE", startsAt: new Date("2020-01-01T00:00:00Z"), endsAt: warrantyToday },
     ] });
     await prisma.serviceVisit.create({
       data: { serviceId, scheduledStart: upcoming, status: "PLANNED" },
@@ -166,7 +169,7 @@ describe("Aftercare endpoints and operational indicators", () => {
     expect(alerts.body.revisions.overdue.count).toBe(1);
     expect(alerts.body.revisions.upcoming.count).toBe(1);
     expect(alerts.body.warranties.expired.count).toBe(1);
-    expect(alerts.body.warranties.expiring.count).toBe(1);
+    expect(alerts.body.warranties.expiring.count).toBe(2);
 
     const dashboard = await agentWithCookie(planning.cookie).get("/api/dashboard?days=14").expect(200);
     expect(dashboard.body.services.upcoming.count).toBe(1);
