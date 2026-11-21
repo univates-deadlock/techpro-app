@@ -32,6 +32,10 @@ Resumo auditado da branch `main`, distinguindo a entrega real do escopo planejad
 
 ---
 
+- **[Fluxo de decisões de orçamento (PR #108)](quote-workflow.md)** — contrato da interface, pré-condições e teste de integração das ações críticas; depende da consolidação com PR #110.
+
+---
+
 ## 3. Arquitetura e decisões técnicas
 
 Guias que detalham a implementação interna e a organização em camadas de cada pacote:
