@@ -20,7 +20,8 @@ nem em diretórios servidos pelo Caddy.
 4. Registrar o commit atual para rollback do **código**.
 5. Executar migrations somente depois de checar compatibilidade retroativa.
 6. No pós-deploy, validar `/api/health`, login, criação/consulta e logs.
-7. Não usar `docker compose down -v`: isso removeria volumes de dados.
+7. Rodar `sh scripts/smoke-check.sh https://app.matbdev.com` para verificar HTTP, proxy e 401 sem sessão.
+8. Não usar `docker compose down -v`: isso removeria volumes de dados.
 
 O fluxo GitHub Actions → `deadlock-deploy` → runner → Caddy central
 permanece inalterado. Esta alteração não publica PRs em draft.

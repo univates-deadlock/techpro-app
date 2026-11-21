@@ -52,4 +52,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose --profile backup config --quiet
-      - run: sh -n scripts/backup-postgres.sh scripts/verify-backup.sh
+      - run: sh -n scripts/backup-postgres.sh scripts/verify-backup.sh scripts/smoke-check.sh
