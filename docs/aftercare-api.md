@@ -106,3 +106,28 @@ Os modelos Prisma já estão versionados: não foi criada nova migration.
 A criação operacional de serviços está no PR #112 e precisa ser integrada
 antes da demonstração ponta a ponta com garantias e revisões.
 O fluxo de orçamento e decisão está nos PRs #108 e #110.
+
+## Testes automatizados críticos
+
+A suíte de integração HTTP/Prisma
+[aftercare.integration.test.ts](../api/tests/aftercare.integration.test.ts)
+verifica: restrição de acesso por perfil, múltiplas garantias com
+períodos válidos, impossibilidade de gravar períodos invertidos mesmo
+em edição parcial, vínculo de revisões à visita do mesmo serviço e
+bloqueio de alterações após conclusão. Os indicadores de alertas
+validam contagens de vencidos/próximos sem incluir revisões concluídas.
+
+[operational.unit.test.ts](../api/tests/operational.unit.test.ts)
+protege as fronteiras do dia em America/Sao_Paulo e a semântica de
+datas de garantia. Não foram criados testes repetitivos para cada
+combinação de filtros ou campo opcional.
+
+```bash
+npm run test:unit --prefix api
+npm run test:integration --prefix api
+```
+
+Os testes de integração utilizam um PostgreSQL descartável com Docker e
+não acessam dados de produção. A integração real com serviços/visitas,
+telas e permissões em ambiente publicado ainda depende do merge
+dos demais módulos.

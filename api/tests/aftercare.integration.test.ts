@@ -182,4 +182,28 @@ describe("Aftercare endpoints and operational indicators", () => {
     await agentWithCookie(admin.cookie).get("/api/dashboard?days=91").expect(400);
     await agentWithCookie(admin.cookie).get("/api/alerts?unexpected=true").expect(400);
   });
+
+  it("preserves warranty dates when a partial update would invert the period", async () => {
+    const created = await agentWithCookie(admin.cookie)
+      .post("/api/warranties")
+      .send({
+        serviceId,
+        type: "SERVICE",
+        startsAt: "2026-11-01",
+        endsAt: "2027-11-01",
+      })
+      .expect(201);
+
+    await agentWithCookie(admin.cookie)
+      .patch("/api/warranties/" + created.body.id)
+      .send({ startsAt: "2028-01-01" })
+      .expect(400);
+
+    const persisted = await prisma.warranty.findUniqueOrThrow({
+      where: { id: created.body.id as string },
+    });
+    expect(persisted.startsAt.toISOString()).toBe("2026-11-01T00:00:00.000Z");
+    expect(persisted.endsAt.toISOString()).toBe("2027-11-01T00:00:00.000Z");
+  });
+
 });

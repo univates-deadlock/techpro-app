@@ -173,7 +173,7 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ## Rotas registradas e contratos HTTP
 
-A API inclui agora garantias, revisões e indicadores operacionais. Os contratos novos estão em [docs/aftercare-api.md](../docs/aftercare-api.md). A API de serviços/visitas tem implementação em PR separado e não deve ser considerada integrada até o merge.
+A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). Os módulos de visitas técnicas permanecem pendentes.
 
 Os testes HTTP automatizados estão em `api/tests/` e usam um PostgreSQL descartável.
 
