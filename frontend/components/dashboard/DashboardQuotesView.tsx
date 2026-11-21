@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { formatBRL, formatDate } from "@/lib/money";
+import { getOperationalDashboard, type OperationalDashboard } from "@/lib/operational";
 import {
   QUOTE_STATUS_META,
   listQuotes,
@@ -24,6 +25,8 @@ import {
 export function DashboardQuotesView() {
   const [quotes, setQuotes] = useState<QuoteListItem[] | null>(null);
   const [error, setError] = useState("");
+  const [operations, setOperations] = useState<OperationalDashboard | null>(null);
+  const [operationsError, setOperationsError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -41,6 +44,18 @@ export function DashboardQuotesView() {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getOperationalDashboard()
+      .then((data) => { if (active) setOperations(data); })
+      .catch((err: unknown) => {
+        if (active) setOperationsError(
+          err instanceof Error ? err.message : "Não foi possível carregar os indicadores.",
+        );
+      });
+    return () => { active = false; };
   }, []);
 
   const all = quotes ?? [];
@@ -193,23 +208,67 @@ export function DashboardQuotesView() {
             )}
           </Card>
 
+          {operationsError ? <Alert tone="error">{operationsError}</Alert> : null}
           <Card className="p-5">
-            <h2 className="mb-3 text-sm font-semibold text-tp-text-main">
-              Próximos serviços e visitas
-            </h2>
-            <p className="py-2.5 text-sm text-tp-text-muted">
-              O módulo de serviços ainda não foi implementado.
-            </p>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-tp-text-main">
+                Próximos serviços e visitas
+              </h2>
+              <Link href="/servicos" className="text-xs font-semibold text-tp-blue-900 hover:underline">
+                Ver serviços
+              </Link>
+            </div>
+            {operations === null ? (
+              <p className="text-sm text-tp-text-muted">{operationsError || "Carregando…"}</p>
+            ) : (
+              <>
+                <p className="mb-3 text-sm text-tp-text-body">
+                  <strong>{operations.services.upcoming.count}</strong> serviços e{" "}
+                  <strong>{operations.visits.upcoming.count}</strong> visitas nos próximos{" "}
+                  {operations.window.days} dias.
+                </p>
+                <ul className="space-y-2 text-sm">
+                  {operations.services.upcoming.items.slice(0, 4).map((service) => (
+                    <li key={service.id} className="flex justify-between gap-2 border-t border-tp-border-light pt-2">
+                      <span className="min-w-0 truncate text-tp-text-body">
+                        {service.client.name} · {service.title}
+                      </span>
+                      <span className="shrink-0 text-xs text-tp-text-muted">
+                        {formatDate(service.plannedStart)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {operations.services.upcoming.count === 0 && operations.visits.upcoming.count === 0 ? (
+                  <p className="text-xs text-tp-text-muted">Nenhum atendimento próximo.</p>
+                ) : null}
+              </>
+            )}
           </Card>
 
           <Card className="p-5">
             <h2 className="mb-3 text-sm font-semibold text-tp-text-main">
               Revisões e garantias
             </h2>
-            <p className="py-2.5 text-sm text-tp-text-muted">
-              Nenhuma revisão ou garantia programada. Os módulos serão
-              implementados nas próximas etapas.
-            </p>
+            {operations === null ? (
+              <p className="text-sm text-tp-text-muted">{operationsError || "Carregando…"}</p>
+            ) : (
+              <dl className="space-y-3 text-sm">
+                {([
+                  ["Revisões atrasadas", operations.alerts.revisions.overdue.count, "/revisoes"],
+                  ["Revisões próximas", operations.alerts.revisions.upcoming.count, "/revisoes"],
+                  ["Garantias vencidas", operations.alerts.warranties.expired.count, "/garantias"],
+                  ["Garantias próximas do fim", operations.alerts.warranties.expiring.count, "/garantias"],
+                ] as const).map(([label, count, href]) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <dt>
+                      <Link href={href} className="text-tp-text-body hover:underline">{label}</Link>
+                    </dt>
+                    <dd className="font-bold tabular-nums text-tp-text-main">{count}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </Card>
         </div>
       </div>
