@@ -16,6 +16,25 @@ services:
       timeout: 3s
       retries: 10
 
+  db-backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-techpro}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-techpro}
+      PGDATABASE: ${POSTGRES_DB:-techpro}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION: "7"
+    entrypoint: ["/bin/sh", "-ec"]
+    command: ["while :; do /bin/sh /usr/local/bin/backup-postgres.sh; sleep 86400; done"]
+    volumes:
+      - db_backups:/backups
+      - ./scripts/backup-postgres.sh:/usr/local/bin/backup-postgres.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build: ./api
     restart: unless-stopped
@@ -77,6 +96,7 @@ services:
 
 volumes:
   postgres_data:
+  db_backups:
   api_node_modules:
   api_generated:
   frontend_node_modules:

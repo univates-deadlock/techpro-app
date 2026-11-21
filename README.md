@@ -347,3 +347,7 @@ Para conduzir a apresentação técnica do projeto de forma alinhada ao código 
 - **[Guia de CI/CD e Deploy](docs/deploy.md)** — variáveis de ambiente na VM, rede `deadlock_edge`, Caddy central e operação do runner self-hosted.
 - **[Documento de Requisitos (PRD)](docs/documento-requisitos.md)** — escopo planejado do MVP, requisitos funcionais/não funcionais, casos de uso e DER.
 - **[Contexto do cliente](docs/contexto-cliente.md)** e **[Perguntas ao cliente](docs/perguntas-cliente.md)** — registros da etapa inicial de descoberta.
+
+## Backup e recuperação
+
+O Compose inclui backups diários locais de PostgreSQL com retenção mínima de sete cópias. Consulte [backups e rollback](docs/backups-and-rollback.md) para monitoramento, teste de restauração isolada e publicação segura.
