@@ -19,6 +19,7 @@ router.delete("/:id", QuoteController.deleteQuote);
 router.post("/:id/send", QuoteController.sendQuote);
 router.post("/:id/approve", QuoteController.approveQuote);
 router.post("/:id/reject", QuoteController.rejectQuote);
+router.post("/:id/expire", QuoteController.expireQuote);
 
 //Quote items
 router.post("/:id/items", QuoteController.addQuoteItem);

@@ -84,7 +84,7 @@ A classificação abaixo reflete exclusivamente o que está implementado no cód
 
 ### 5.3 Parcialmente implementadas
 
-- **Ciclo de decisão do orçamento:** o modelo de dados e as regras de proteção da API já distinguem orçamentos em aberto (`DRAFT`, `SENT`) de orçamentos decididos (`APPROVED`, `REJECTED`, `EXPIRED`), porém **ainda não existem endpoints nem ações na interface** para marcar um orçamento como enviado, registrar aprovação/rejeição/expiração ou anexar arquivo de evidência.
+- **Ciclo de decisão do orçamento:** a tela de detalhe registra envio, aprovação e rejeição. A API também permite registrar a expiração manual e guarda a data e o usuário responsável pelo envio e pela decisão. Consultar o [contrato da API](api/README.md#registro-de-envio-e-decisão).
 - **Dashboard operacional (`/`):** para `ADMIN` e `PLANNING`, apresenta cartões de indicadores ("Em aberto", "Aguardando decisão", "Rascunhos", "Valor em aberto"), lista de orçamentos pendentes e contagem por status calculados a partir de `GET /api/quotes`; para `TECHNICIAN`, exibe apenas o painel operacional de serviços/visitas sem requisitar dados comerciais restritos. Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a implementação desses módulos.
 - **Experiência do perfil `TECHNICIAN`:** o perfil é autenticado e devidamente bloqueado pela API (`403`) nos módulos administrativos e comerciais. Na interface, páginas restritas (`Clientes`, `Orçamentos`, `Garantias`, `Revisões` e `Usuários`) são ocultadas na barra lateral e redirecionam para `/` no servidor (`requireRoleSession`) caso acessadas por URL direta, restando implementar seus endpoints e telas próprias de agenda/execução.
 
@@ -100,7 +100,7 @@ As tabelas e enums abaixo já existem em [`api/prisma/schema.prisma`](api/prisma
 
 ### 5.5 Planejadas e ainda não implementadas
 
-- Endpoints e interface para envio de orçamento (`DRAFT → SENT`), decisão (`APPROVED`, `REJECTED`, `EXPIRED`) e upload de evidências.
+- Ação de expiração na interface e upload protegido de evidências de aprovação.
 - Módulos completos de serviços, agendamento de visitas, atribuição/agenda de técnicos, garantias, revisões e alertas operacionais internos.
 - Alteração e recuperação de senha de usuários.
 - Módulo opcional de acompanhamento manual de licitações.
@@ -331,7 +331,7 @@ Para conduzir a apresentação técnica do projeto de forma alinhada ao código 
 
 ## 14. Limitações atuais e próximas entregas
 
-- **Transições de orçamento pendentes:** orçamentos são criados e editados em `DRAFT`, mas o envio ao cliente (`SENT`), o registro de decisão (`APPROVED`, `REJECTED`, `EXPIRED`) e o upload de evidências dependem de novos endpoints e fluxos de UI.
+- **Ciclo de decisão na interface:** a expiração manual está disponível pela API. A ação na tela de detalhe e o upload protegido de evidências fazem parte das próximas entregas.
 - **Módulos operacionais e pós-serviço:** serviços, visitas técnicas, agenda do técnico, garantias, revisões e alertas internos estão apenas modelados no banco de dados.
 - **Gestão de senhas:** ainda não há endpoint ou tela para redefinição/alteração de senha após o cadastro do usuário.
 - **Containers em modo de desenvolvimento:** os `Dockerfile`s atuais executam `tsx watch` e `next dev --webpack` com volumes montados, configuração adequada para demonstração acadêmica, mas que requer build de produção antes de uso produtivo real.

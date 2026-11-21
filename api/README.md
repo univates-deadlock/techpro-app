@@ -241,6 +241,10 @@ Diferentemente de `/api/users`, as rotas de clientes recebem o **objeto JSON dir
 | `POST` | `/api/quotes/:id/items` | `201` | Adiciona um item ao orçamento, recalcula totais e retorna o orçamento completo. |
 | `PATCH` | `/api/quotes/:id/items/:itemId` | `200` | Atualiza parcialmente um item existente, recalcula totais e retorna o orçamento completo. |
 | `DELETE` | `/api/quotes/:id/items/:itemId` | `200` | Remove um item do orçamento, recalcula totais e retorna o orçamento completo. |
+| `POST` | `/api/quotes/:id/send` | `200` | Registra o envio de um `DRAFT` com ao menos um item. Aceita corpo vazio ou `{}` e grava `sentAt` e `sentBy`. |
+| `POST` | `/api/quotes/:id/approve` | `200` | Registra aprovação de um orçamento `SENT`, com data e observação opcionais. |
+| `POST` | `/api/quotes/:id/reject` | `200` | Registra rejeição de um orçamento `SENT`. Exige `decisionNotes` com o motivo. |
+| `POST` | `/api/quotes/:id/expire` | `200` | Registra manualmente a expiração de um orçamento `SENT`, com data e observação opcionais. |
 
 #### Exemplo de criação (`POST /api/quotes`)
 
@@ -271,7 +275,22 @@ Diferentemente de `/api/users`, as rotas de clientes recebem o **objeto JSON dir
 - Em `QuoteItem`: `type` aceita `"PRODUCT"`, `"SERVICE"` ou `"OTHER"`; `description` é obrigatória; `quantity > 0`; `unitPrice >= 0`; `discount >= 0` (em R$, padrão `0`).
 - Na resposta JSON, campos `Decimal` do Prisma (`subtotal`, `discount`, `total`, `quantity`, `unitPrice`) são serializados como **strings** (ex.: `"982"`, `"250.5"`), preservando precisão exata no transporte.
 
-> **Importante — transições de status ainda não implementadas:** na entrega atual, **não existem endpoints** para enviar um orçamento (`DRAFT → SENT`), registrar a decisão do cliente (`APPROVED`, `REJECTED`, `EXPIRED`) ou anexar evidência (`decisionEvidenceUrl`). Todo orçamento criado pela API inicia e permanece em `DRAFT`.
+#### Registro de envio e decisão
+
+O envio representa o registro interno de que a proposta foi encaminhada ao cliente. A API grava o horário do servidor e o ID do usuário autenticado. O status `SENT` mantém o orçamento aberto para edição.
+
+Aprovação, rejeição e expiração retornam o orçamento detalhado com o novo status, `decidedAt`, `decidedBy` e `decisionNotes`. Para registrar uma data específica, informe `decidedAt` no formato ISO 8601 com fuso horário. Se omitida, a data é registrada no momento da operação. Por exemplo, em uma rejeição:
+
+```json
+{
+  "decidedAt": "2026-11-10T14:30:00-03:00",
+  "decisionNotes": "Cliente optou por adiar o serviço"
+}
+```
+
+A API extrai `sentBy` e `decidedBy` da sessão; os registros anteriores à migration podem retornar esses campos como `null`. O upload protegido de evidências está descrito na [issue #66](https://github.com/univates-deadlock/techpro-app/issues/66).
+
+As quatro rotas retornam `400` se o ID ou o corpo for inválido, `401` sem sessão válida, `403` para perfil sem acesso, `404` para orçamento inexistente e `409` para transição incompatível com o status atual, decisão repetida ou tentativa de enviar um rascunho vazio.
 
 ---
 
@@ -415,7 +434,7 @@ npm run test:integration --prefix api
 
 1. **Permissões (RBAC):** valida o controle de acesso por perfil (`ADMIN`, `PLANNING` e `TECHNICIAN`), comprovando que técnicos autenticados recebem HTTP `403 Forbidden` ao tentar operações de planejamento ou administrativas, e requisições anônimas recebem HTTP `401 Unauthorized`.
 2. **Validação de clientes e CRUD (`client.validation.unit.test.ts` e `client.integration.test.ts`):** valida dígitos verificadores de CPF/CNPJ, compatibilidade entre `type` (`INDIVIDUAL`/`COMPANY`) e documento, DDD e formato de telefone/WhatsApp brasileiro (incluindo normalização de `+55`), além de criação, edição parcial e inativação lógica.
-3. **Cálculo e CRUD de orçamentos (`quote.calculations.unit.test.ts` e `quote.integration.test.ts`):** valida as regras de `quote.calculations.ts` com tipos `Decimal` em `R$` (quantidade × valor unitário, desconto de item em `R$`, soma de subtotais, desconto geral em `R$`, total líquido e rejeição de descontos superiores ao subtotal) e o ciclo completo via HTTP/PostgreSQL (criação em `DRAFT`, atualização atômica de cabeçalho e itens em `PATCH /api/quotes/:id` com rollback transacional em falhas e exclusão de rascunho).
+3. **Cálculo e CRUD de orçamentos (`quote.calculations.unit.test.ts` e `quote.integration.test.ts`):** valida as regras de `quote.calculations.ts` com tipos `Decimal` em `R$` (quantidade × valor unitário, desconto de item em `R$`, soma de subtotais, desconto geral em `R$`, total líquido e rejeição de descontos superiores ao subtotal) e o ciclo completo via HTTP/PostgreSQL (criação em `DRAFT`, atualização atômica de cabeçalho e itens em `PATCH /api/quotes/:id` com rollback transacional em falhas e exclusão de rascunho). A suíte também cobre envio, aprovação, rejeição e expiração, permissões, integridade dos dados de auditoria e requisições concorrentes.
 
 ### Banco descartável para integração
 
@@ -440,6 +459,14 @@ No workflow `.github/workflows/ci.yml`, o job `api` executa `npm test` após as 
 - **429 na demonstração:** aguarde a janela do rate limiter; ele guarda contadores
   em memória e não é distribuído entre várias instâncias.
 
-## Serviços — implementação em revisão
+## Serviços (`/api/services`)
 
-A branch `feat/api-services` adiciona endpoints `/api/services` para serviços diretos ou vinculados a orçamentos aprovados. O contrato completo, regras de status e testes de integração estão em [`docs/service-api.md`](../docs/service-api.md). Esta seção descreve o PR #112 ainda não mesclado, não uma funcionalidade já implantada.
+A API expõe endpoints `/api/services` para serviços diretos ou vinculados a orçamentos aprovados. O contrato completo, regras de status e testes de integração estão em [`docs/service-api.md`](../docs/service-api.md).
+
+### Regressões críticas do fluxo de decisão de orçamentos
+
+Os testes em [`quote.integration.test.ts`](tests/quote.integration.test.ts) e [`quote-status.integration.test.ts`](tests/quote-status.integration.test.ts) executam chamadas HTTP com sessões reais e banco PostgreSQL descartável, verificando: envio apenas com itens, autoria obtida da sessão, uma única decisão sob concorrência, serialização do envio com a remoção do último item, impossibilidade de editar orçamentos decididos e preservação do status/auditoria quando uma rejeição é inválida ou tenta reverter uma aprovação.
+
+```bash
+npm run test:integration --prefix api
+```

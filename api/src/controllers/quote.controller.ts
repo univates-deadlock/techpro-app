@@ -3,12 +3,13 @@ import {
   createQuoteItemSchema,
   createQuoteSchema,
   listQuotesQuerySchema,
+  quoteDecisionSchema,
   quoteIdSchema,
   quoteItemIdSchema,
+  rejectQuoteSchema,
+  sendQuoteSchema,
   updateQuoteItemSchema,
   updateQuoteSchema,
-  approveQuoteSchema,
-  rejectQuoteSchema,
 } from "../schemas/quote.schema.js";
 import * as quoteService from "../services/quote.service.js";
 import { AppError } from "../utils/AppError.js";
@@ -85,25 +86,30 @@ export const deleteQuoteItem = async (req: Request, res: Response) => {
   return res.json(quote);
 };
 
-// 9) send quote
 export const sendQuote = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
-  const quote = await quoteService.sendQuote(id);
+  sendQuoteSchema.parse(req.body === undefined ? {} : req.body);
+  const quote = await quoteService.sendQuote(id, getAuthenticatedUserId(res));
   return res.json(quote);
 };
 
-// 10) Approve quote
 export const approveQuote = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
-  const validatedData = approveQuoteSchema.parse(req.body);
-  const quote = await quoteService.approveQuote(id, validatedData);
+  const data = quoteDecisionSchema.parse(req.body === undefined ? {} : req.body);
+  const quote = await quoteService.recordQuoteDecision(id, "APPROVED", data, getAuthenticatedUserId(res));
   return res.json(quote);
 };
 
-// 11) Reject quote
 export const rejectQuote = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
-  const validatedData = rejectQuoteSchema.parse(req.body);
-  const quote = await quoteService.rejectQuote(id, validatedData);
+  const data = rejectQuoteSchema.parse(req.body);
+  const quote = await quoteService.recordQuoteDecision(id, "REJECTED", data, getAuthenticatedUserId(res));
+  return res.json(quote);
+};
+
+export const expireQuote = async (req: Request, res: Response) => {
+  const id = quoteIdSchema.parse(req.params.id);
+  const data = quoteDecisionSchema.parse(req.body === undefined ? {} : req.body);
+  const quote = await quoteService.recordQuoteDecision(id, "EXPIRED", data, getAuthenticatedUserId(res));
   return res.json(quote);
 };

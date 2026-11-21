@@ -310,13 +310,13 @@ export type QuoteInput = z.infer<typeof quoteSchema>;
 /** Approve decision: mirrors approveQuoteSchema in the API. */
 export const approveQuoteSchema = z.object({
   decisionNotes: z.string().trim().nullable().optional(),
-  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida.").nullable().optional(),
+  decidedAt: z.iso.datetime({ offset: true, error: "Data da decisão inválida." }).optional(),
 });
 
 /** Reject decision: a reason is required, mirroring the API. */
 export const rejectQuoteSchema = z.object({
   decisionNotes: z.string().trim().min(1, "Informe o motivo da rejeição."),
-  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida.").nullable().optional(),
+  decidedAt: z.iso.datetime({ offset: true, error: "Data da decisão inválida." }).optional(),
 });
 
 export type ApproveQuoteInput = z.infer<typeof approveQuoteSchema>;
