@@ -10,6 +10,7 @@ import {
 } from "../schemas/quote.schema.js";
 import * as quoteService from "../services/quote.service.js";
 import { AppError } from "../utils/AppError.js";
+import { asPublicQuote } from "../utils/quoteEvidenceUrl.js";
 
 // The requireActiveUser middleware stores the authenticated user in res.locals.user.
 const getAuthenticatedUserId = (res: Response): string => {
@@ -26,14 +27,14 @@ const getAuthenticatedUserId = (res: Response): string => {
 export const getAllQuotes = async (req: Request, res: Response) => {
   const filters = listQuotesQuerySchema.parse(req.query);
   const quotes = await quoteService.getAllQuotes(filters);
-  return res.json(quotes);
+  return res.json(quotes.map(asPublicQuote));
 };
 
 // 2) search by id
 export const getQuoteById = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
   const quote = await quoteService.getQuoteById(id);
-  return res.json(quote);
+  return res.json(asPublicQuote(quote));
 };
 
 // 3) create new
@@ -48,7 +49,7 @@ export const updateQuote = async (req: Request, res: Response) => {
   const id = quoteIdSchema.parse(req.params.id);
   const validatedData = updateQuoteSchema.parse(req.body);
   const quote = await quoteService.updateQuote(id, validatedData);
-  return res.json(quote);
+  return res.json(asPublicQuote(quote));
 };
 
 // 5) Delete (draft only)
@@ -72,7 +73,7 @@ export const updateQuoteItem = async (req: Request, res: Response) => {
   const itemId = quoteItemIdSchema.parse(req.params.itemId);
   const validatedData = updateQuoteItemSchema.parse(req.body);
   const quote = await quoteService.updateQuoteItem(quoteId, itemId, validatedData);
-  return res.json(quote);
+  return res.json(asPublicQuote(quote));
 };
 
 // 8) delete item
@@ -80,5 +81,5 @@ export const deleteQuoteItem = async (req: Request, res: Response) => {
   const quoteId = quoteIdSchema.parse(req.params.id);
   const itemId = quoteItemIdSchema.parse(req.params.itemId);
   const quote = await quoteService.deleteQuoteItem(quoteId, itemId);
-  return res.json(quote);
+  return res.json(asPublicQuote(quote));
 };

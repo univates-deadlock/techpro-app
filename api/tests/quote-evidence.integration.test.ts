@@ -64,6 +64,10 @@ describe("Protected S3 quote approval evidence", () => {
     const stored = await prisma.quote.findUniqueOrThrow({ where: { id: quoteId } });
     expect(stored.decisionEvidenceUrl).toMatch(/^quotes\/[0-9a-f-]+\/[0-9a-f-]+\.pdf$/);
     expect(stored.decisionEvidenceUrl).not.toContain("http");
+    const quoteResponse = await agentWithCookie(admin.cookie)
+      .get("/api/quotes/" + quoteId).expect(200);
+    expect(quoteResponse.body.decisionEvidenceUrl).toBe(url);
+
 
     const download = await agentWithCookie(planning.cookie).get(url).expect(200);
     expect(download.headers["content-type"]).toMatch(/application\/pdf/);

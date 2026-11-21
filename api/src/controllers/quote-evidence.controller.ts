@@ -8,6 +8,7 @@ import {
   readEvidenceObject,
 } from "../services/quote-evidence.storage.js";
 import { AppError } from "../utils/AppError.js";
+import { evidenceDownloadUrl } from "../utils/quoteEvidenceUrl.js";
 
 const formats = {
   "application/pdf": {
@@ -32,9 +33,6 @@ const typesByExtension: Record<string, EvidenceMime> = {
 const storedName = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(pdf|png|jpg)$/;
 
 const objectKey = (quoteId: string, filename: string) => "quotes/" + quoteId + "/" + filename;
-const downloadUrl = (quoteId: string, filename: string) =>
-  "/api/quotes/" + quoteId + "/evidence/" + filename;
-
 async function getQuote(id: string) {
   const quote = await prisma.quote.findUnique({
     where: { id },
@@ -86,7 +84,7 @@ export const upload = async (req: Request, res: Response) => {
     throw error;
   }
 
-  return res.status(201).json({ url: downloadUrl(id, filename) });
+  return res.status(201).json({ url: evidenceDownloadUrl(id, key) });
 };
 
 export const download = async (req: Request, res: Response) => {
