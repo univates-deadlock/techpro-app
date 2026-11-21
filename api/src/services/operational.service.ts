@@ -1,7 +1,7 @@
 import type { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 
-import { businessWindow } from "../utils/businessWindow.js";
+import { businessWindow, warrantyDateBounds } from "../utils/businessWindow.js";
 
 const MAX_ITEMS = 20;
 
@@ -17,6 +17,7 @@ const warrantySelect = {
 
 export async function getAlerts(days = 14, now = new Date()) {
   const window = businessWindow(now, days);
+  const warrantyDates = warrantyDateBounds(window);
   const activeStatuses = ["PENDING", "SCHEDULED"] as const;
   const revisionsOverdue: Prisma.RevisionWhereInput = {
     status: { in: [...activeStatuses] }, scheduledAt: { lt: window.start },
@@ -26,10 +27,10 @@ export async function getAlerts(days = 14, now = new Date()) {
     scheduledAt: { gte: window.start, lt: window.endExclusive },
   };
   const warrantiesExpired: Prisma.WarrantyWhereInput = {
-    endsAt: { lt: window.start },
+    endsAt: { lt: warrantyDates.start },
   };
   const warrantiesExpiring: Prisma.WarrantyWhereInput = {
-    endsAt: { gte: window.start, lt: window.endExclusive },
+    endsAt: { gte: warrantyDates.start, lt: warrantyDates.endExclusive },
   };
 
   const [overdueRevisionCount, upcomingRevisionCount, expiredWarrantyCount, expiringWarrantyCount,
