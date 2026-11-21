@@ -78,21 +78,23 @@ export const listQuotesQuerySchema = z.object({
   status: quoteStatusEnum.optional(),
 });
 
-export const rejectQuoteSchema = z.strictObject({
-  decisionNotes: z.string().trim().min(1, "Informe o motivo da rejeição"),
-  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida").nullable().optional(),
-});
+export const sendQuoteSchema = z.strictObject({});
 
-export const approveQuoteSchema = z.strictObject({
+const quoteDecisionFields = {
+  decidedAt: z.iso.datetime({ offset: true, error: "Data da decisão inválida" }).optional(),
   decisionNotes: z.string().trim().nullable().optional(),
-  decisionEvidenceUrl: z.string().trim().url("URL de evidência inválida").nullable().optional(),
-});
+};
 
+export const quoteDecisionSchema = z.strictObject(quoteDecisionFields);
+
+export const rejectQuoteSchema = z.strictObject({
+  ...quoteDecisionFields,
+  decisionNotes: z.string().trim().min(1, "Informe o motivo da rejeição"),
+});
 
 export type CreateQuoteInput = z.infer<typeof createQuoteSchema>;
 export type UpdateQuoteInput = z.infer<typeof updateQuoteSchema>;
 export type CreateQuoteItemInput = z.infer<typeof createQuoteItemSchema>;
 export type UpdateQuoteItemInput = z.infer<typeof updateQuoteItemSchema>;
 export type ListQuotesQuery = z.infer<typeof listQuotesQuerySchema>;
-export type RejectQuoteInput = z.infer<typeof rejectQuoteSchema>;
-export type ApproveQuoteInput = z.infer<typeof approveQuoteSchema>;
+export type QuoteDecisionInput = z.infer<typeof quoteDecisionSchema>;
