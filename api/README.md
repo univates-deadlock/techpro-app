@@ -458,3 +458,20 @@ No workflow `.github/workflows/ci.yml`, o job `api` executa `npm test` após as 
 - **403 no CRUD:** confira perfil `ADMIN` e `isActive=true`.
 - **429 na demonstração:** aguarde a janela do rate limiter; ele guarda contadores
   em memória e não é distribuído entre várias instâncias.
+
+### Regressões críticas do fluxo de decisão (branch PR #110)
+
+Os testes em [quote.integration.test.ts](tests/quote.integration.test.ts)
+executam chamadas HTTP com sessões reais e banco PostgreSQL descartável.
+Os cenários essenciais verificam: envio apenas com itens, autoria obtida
+da sessão, uma única decisão sob concorrência, serialização do envio com
+a remoção do último item, impossibilidade de editar orçamentos decididos
+e preservação do status/auditoria quando uma rejeição é inválida ou tenta
+reverter uma aprovação. A evidência S3 pertence ao PR #114.
+
+```bash
+npm run test:integration --prefix api
+```
+
+Estes testes não atestam a integração do frontend da PR #108 nem a
+publicação do fluxo na branch main.

@@ -429,6 +429,13 @@ describe("Quote integration tests", () => {
       await agentWithCookie(admin.cookie).post(`${path}/send`).expect(200);
 
       await agentWithCookie(admin.cookie).post(`${path}/reject`).send({ decisionNotes: "   " }).expect(400);
+      const stillSent = await agentWithCookie(admin.cookie).get(path).expect(200);
+      expect(stillSent.body).toMatchObject({
+        status: "SENT",
+        decidedAt: null,
+        decidedBy: null,
+        decisionNotes: null,
+      });
       await agentWithCookie(admin.cookie)
         .post(`${path}/expire`)
         .send({ decidedAt: "2026-11-10T14:30:00" })
@@ -440,12 +447,19 @@ describe("Quote integration tests", () => {
         .expect(400);
 
       const approved = await agentWithCookie(admin.cookie).post(`${path}/approve`).expect(200);
+      await agentWithCookie(planning.cookie)
+        .post(`${path}/reject`)
+        .send({ decisionNotes: "Tentativa de alterar decisão final" })
+        .expect(409);
       expect(approved.body).toMatchObject({
         status: "APPROVED",
         decidedAt: expect.any(String),
         decidedBy: admin.id,
         decisionNotes: null,
       });
+      const persisted = await agentWithCookie(admin.cookie).get(path).expect(200);
+      expect(persisted.body.status).toBe("APPROVED");
+      expect(persisted.body.decisionNotes).toBeNull();
     });
 
     it("allows only one concurrent decision to persist", async () => {
