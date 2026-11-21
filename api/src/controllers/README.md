@@ -11,5 +11,6 @@ Padrões dos controllers atuais:
 - `user.controller.ts`: recebe envelope `{ userData }` em `POST`/`PATCH`, responde `201` na criação, `200` na edição e `204` (sem corpo) em ativação, desativação e `DELETE` lógico.
 - `client.controller.ts`: recebe campos diretamente no body, responde `201` na criação e `200` com JSON nas consultas, edições, ativação, inativação e `DELETE` lógico.
 - `quote.controller.ts`: valida filtros de listagem (`req.query`), payload de orçamento e itens, obtém `createdBy` de `res.locals.user.id` e responde `204` na exclusão física de rascunhos (`DRAFT`).
+- `service.controller.ts`: valida filtros de listagem (`req.query`), payload de serviço e mudança de status, obtém `createdBy` de `res.locals.user.id` e responde `201` na criação e `200` nas demais operações.
 
 Não realize consultas Prisma, cálculos de negócio ou hashing de senha nos controllers; mantenha essas operações em `services/`.

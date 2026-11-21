@@ -6,6 +6,7 @@ Cada roteador associa método e caminho HTTP a um controller, sendo montado sob 
 - `user.route.ts` (`/api/users`): protegido por `router.use(requireActiveUser, requireAdmin)` (exclusivo `ADMIN`).
 - `client.route.ts` (`/api/clients`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`.
 - `quote.route.ts` (`/api/quotes`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo as sub-rotas `/:id/items` e `/:id/items/:itemId`.
+- `service.route.ts` (`/api/services`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo a sub-rota `/:id/status`.
 
 As rotas `/api/auth/*` são montadas diretamente em `app.ts` pelo handler do Better Auth, antes de `express.json()`.
 
