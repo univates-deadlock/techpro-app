@@ -171,6 +171,10 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ---
 
+## Evidências de aprovação de orçamentos
+
+O upload opcional de evidências tem contrato e política de armazenamento próprios. Consulte [docs/quote-evidence.md](../docs/quote-evidence.md). A decisão/aprovação do orçamento é implementada no fluxo comercial em PR separado.
+
 ## Rotas registradas e contratos HTTP
 
 Apenas os roteadores abaixo estão registrados em `src/app.ts` (embora `prisma/schema.prisma` já contenha tabelas para `Service`, `ServiceVisit`, `VisitTechnician`, `Warranty` e `Revision`, **não existem endpoints implementados** para esses módulos na entrega atual).
