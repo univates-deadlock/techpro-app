@@ -173,9 +173,9 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ## Rotas registradas e contratos HTTP
 
-Apenas os roteadores abaixo estão registrados em `src/app.ts` (embora `prisma/schema.prisma` já contenha tabelas para `Service`, `ServiceVisit`, `VisitTechnician`, `Warranty` e `Revision`, **não existem endpoints implementados** para esses módulos na entrega atual).
+A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). Os módulos de visitas técnicas permanecem pendentes.
 
-Exemplos prontos para execução manual também estão disponíveis em [`tests/client.http`](tests/client.http) e [`tests/quote.http`](tests/quote.http).
+Os testes HTTP automatizados estão em `api/tests/` e usam um PostgreSQL descartável.
 
 ### 1. Saúde e Autenticação
 
