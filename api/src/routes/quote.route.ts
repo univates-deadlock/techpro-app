@@ -1,5 +1,6 @@
-import { Router } from "express";
+import { Router, raw } from "express";
 import * as QuoteController from "../controllers/quote.controller.js";
+import * as EvidenceController from "../controllers/quote-evidence.controller.js";
 import { requireActiveUser } from "../middlewares/requireActiveUser.js";
 import { requireRole } from "../middlewares/requireRole.js";
 
@@ -20,6 +21,10 @@ router.post("/:id/send", QuoteController.sendQuote);
 router.post("/:id/approve", QuoteController.approveQuote);
 router.post("/:id/reject", QuoteController.rejectQuote);
 router.post("/:id/expire", QuoteController.expireQuote);
+
+// Optional evidence is available only after approval; never exposed as public static files.
+router.post("/:id/evidence", raw({ type: ["application/pdf", "image/png", "image/jpeg"], limit: "10mb" }), EvidenceController.upload);
+router.get("/:id/evidence/:filename", EvidenceController.download);
 
 //Quote items
 router.post("/:id/items", QuoteController.addQuoteItem);

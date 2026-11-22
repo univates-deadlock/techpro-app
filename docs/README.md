@@ -35,6 +35,7 @@ Resumo auditado da branch `main`, distinguindo a entrega real do escopo planejad
 - **[API de serviços](service-api.md)** — contratos HTTP, regras de vínculo com orçamento e testes críticos.
 - **[Fluxo de decisões de orçamento](quote-workflow.md)** — contrato da interface, pré-condições e teste de integração das ações críticas.
 - **[API de garantias, revisões e alertas](aftercare-api.md)** — contratos, critérios de vencimento, RBAC e testes críticos.
+- **[Evidências de orçamento via S3/RustFS](quote-evidence.md)** — upload autenticado, armazenamento privado, validação e testes críticos.
 
 ---
 
