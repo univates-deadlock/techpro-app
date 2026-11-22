@@ -17,6 +17,7 @@ import userRoute from "./routes/user.route.js";
 import clientRoute from "./routes/client.route.js";
 import quoteRoute from "./routes/quote.route.js";
 import serviceRoute from "./routes/service.route.js";  
+import visitRoutes from "./routes/visit.route.js";
 
 // Creates App
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/users', userRoute);
 app.use('/api/clients', clientRoute);
 app.use('/api/quotes', quoteRoute);
 app.use('/api/services', serviceRoute);  
+app.use("/api/visits", visitRoutes);
 
 // Global Error Handler
 app.use(globalErrorHandler);
