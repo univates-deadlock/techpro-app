@@ -5,20 +5,39 @@
  * options in warranty and revision forms.
  */
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
 export type ServiceOption = {
   id: string;
   title: string;
   clientName: string;
 };
 
-const MOCK_SERVICES: ServiceOption[] = [
-  { id: "svc-001", title: "Instalação CFTV Loja Centro", clientName: "Maria Souza" },
-  { id: "svc-002", title: "Manutenção Alarme Galpão", clientName: "Tech Solutions LTDA" },
-  { id: "svc-003", title: "Cerca Elétrica Residência", clientName: "João Silva" },
-];
+type RawService = {
+  id: string;
+  title: string;
+  client?: { id: string; name: string };
+};
 
 /** Lists active services for warranty/revision form selects. */
 export async function listServiceOptions(): Promise<ServiceOption[]> {
-  // MOCK: replace with fetch to GET /api/services (integration pending)
-  return MOCK_SERVICES;
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/services`, {
+      credentials: "include",
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+
+  if (!res.ok) {
+    throw new Error("Não foi possível carregar os serviços.");
+  }
+
+  const data = (await res.json()) as RawService[];
+  return (Array.isArray(data) ? data : []).map((service) => ({
+    id: service.id,
+    title: service.title,
+    clientName: service.client?.name ?? "Cliente não informado",
+  }));
 }

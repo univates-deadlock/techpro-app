@@ -5,6 +5,8 @@
  * by the screen via `formatDateOnly` from `lib/money.ts`.
  */
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
 export type WarrantyType = "SERVICE" | "MANUFACTURER";
 
 export type Warranty = {
@@ -39,105 +41,137 @@ export const WARRANTY_TYPE_META: Record<WarrantyType, { label: string }> = {
 };
 
 /** Days threshold for the "expiring soon" filter. */
-// TODO: align with the backend rule at integration
 export const EXPIRING_SOON_DAYS = 30;
 
-let nextId = 5;
+type RawWarranty = {
+  id: string;
+  serviceId: string;
+  type: WarrantyType;
+  startsAt: string;
+  endsAt: string;
+  description: string | null;
+  manufacturer: string | null;
+  productReference: string | null;
+  notes?: string | null;
+  service?: {
+    id: string;
+    title: string;
+    client?: { id: string; name: string };
+  };
+};
 
-const MOCK_WARRANTIES: Warranty[] = [
-  {
-    id: "war-001",
-    serviceId: "svc-001",
-    serviceTitle: "Instalação CFTV Loja Centro",
-    clientName: "Maria Souza",
-    type: "SERVICE",
-    startsAt: "2024-01-15",
-    endsAt: "2025-01-15",
-    description: "Garantia de mão de obra da instalação",
-    manufacturer: null,
-    productReference: null,
-  },
-  {
-    id: "war-002",
-    serviceId: "svc-002",
-    serviceTitle: "Manutenção Alarme Galpão",
-    clientName: "Tech Solutions LTDA",
-    type: "MANUFACTURER",
-    startsAt: "2026-06-01",
-    endsAt: "2026-12-15",
-    description: "Garantia do painel de alarme",
-    manufacturer: "Intelbras",
-    productReference: "AMT 8000",
-  },
-  {
-    id: "war-003",
-    serviceId: "svc-003",
-    serviceTitle: "Cerca Elétrica Residência",
-    clientName: "João Silva",
-    type: "SERVICE",
-    startsAt: "2026-10-01",
-    endsAt: "2028-10-01",
-    description: null,
-    manufacturer: null,
-    productReference: null,
-  },
-  {
-    id: "war-004",
-    serviceId: "svc-001",
-    serviceTitle: "Instalação CFTV Loja Centro",
-    clientName: "Maria Souza",
-    type: "MANUFACTURER",
-    startsAt: "2026-03-01",
-    endsAt: "2026-03-01",
-    description: "Cancelada por substituição de equipamento",
-    manufacturer: "Hikvision",
-    productReference: "DS-2CD2143G2-I",
-  },
-];
-
-/** Lists all warranties. */
-export async function listWarranties(): Promise<Warranty[]> {
-  // MOCK: replace with fetch to GET /api/warranties (integration pending)
-  return MOCK_WARRANTIES;
+function mapWarranty(raw: RawWarranty): Warranty {
+  return {
+    id: raw.id,
+    serviceId: raw.serviceId,
+    serviceTitle: raw.service?.title ?? "Serviço",
+    clientName: raw.service?.client?.name ?? "Cliente",
+    type: raw.type,
+    startsAt: raw.startsAt ? raw.startsAt.slice(0, 10) : "",
+    endsAt: raw.endsAt ? raw.endsAt.slice(0, 10) : "",
+    description: raw.description,
+    manufacturer: raw.manufacturer,
+    productReference: raw.productReference,
+  };
 }
 
-/** Creates a new warranty record. */
+async function readError(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    if (Array.isArray(body?.fields) && body.fields.length > 0) {
+      return body.fields
+        .map((f: { path: string; message: string }) => f.message)
+        .join(" ");
+    }
+    if (typeof body?.error === "string") return body.error;
+    if (typeof body?.message === "string") return body.message;
+  } catch {}
+  if (res.status === 401) return "Sessão expirada. Entre novamente.";
+  if (res.status === 403) return "Acesso negado: seu perfil não tem permissão para gerenciar garantias.";
+  return `${fallback} (Status HTTP: ${res.status})`;
+}
+
+/** Lists all warranties from the API. */
+export async function listWarranties(): Promise<Warranty[]> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/warranties`, {
+      credentials: "include",
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+
+  if (!res.ok) {
+    throw new Error(await readError(res, "Não foi possível carregar as garantias."));
+  }
+
+  const data = (await res.json()) as RawWarranty[];
+  return Array.isArray(data) ? data.map(mapWarranty) : [];
+}
+
+/** Creates a new warranty record via API. */
 export async function createWarranty(payload: CreateWarrantyPayload): Promise<Warranty> {
-  // MOCK: replace with fetch to POST /api/warranties (integration pending)
-  const service = MOCK_WARRANTIES.find((w) => w.serviceId === payload.serviceId);
-  const created: Warranty = {
-    id: `war-${String(nextId++).padStart(3, "0")}`,
+  const isManufacturer = payload.type === "MANUFACTURER";
+  const body = {
     serviceId: payload.serviceId,
-    serviceTitle: service?.serviceTitle ?? "Serviço",
-    clientName: service?.clientName ?? "Cliente",
     type: payload.type,
     startsAt: payload.startsAt,
     endsAt: payload.endsAt,
-    description: payload.description ?? null,
-    manufacturer: payload.manufacturer ?? null,
-    productReference: payload.productReference ?? null,
+    description: payload.description || undefined,
+    manufacturer: isManufacturer ? (payload.manufacturer || undefined) : undefined,
+    productReference: isManufacturer ? (payload.productReference || undefined) : undefined,
   };
-  MOCK_WARRANTIES.push(created);
-  return created;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/warranties`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+
+  if (!res.ok) {
+    throw new Error(await readError(res, "Não foi possível criar a garantia."));
+  }
+
+  return mapWarranty((await res.json()) as RawWarranty);
 }
 
-/** Updates an existing warranty. */
+/** Updates an existing warranty via API. */
 export async function updateWarranty(
   id: string,
   payload: UpdateWarrantyPayload,
 ): Promise<Warranty> {
-  // MOCK: replace with fetch to PATCH /api/warranties/:id (integration pending)
-  const index = MOCK_WARRANTIES.findIndex((w) => w.id === id);
-  if (index === -1) throw new Error("Garantia não encontrada.");
-  const updated: Warranty = {
-    ...MOCK_WARRANTIES[index],
+  const isManufacturer = payload.type === "MANUFACTURER";
+  const body = {
     type: payload.type,
     startsAt: payload.startsAt,
     endsAt: payload.endsAt,
     description: payload.description ?? null,
-    manufacturer: payload.manufacturer ?? null,
-    productReference: payload.productReference ?? null,
+    manufacturer: isManufacturer ? (payload.manufacturer ?? null) : null,
+    productReference: isManufacturer ? (payload.productReference ?? null) : null,
   };
-  MOCK_WARRANTIES[index] = updated;
-  return updated;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/warranties/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("Não foi possível falar com o servidor.");
+  }
+
+  if (!res.ok) {
+    throw new Error(await readError(res, "Não foi possível salvar a garantia."));
+  }
+
+  return mapWarranty((await res.json()) as RawWarranty);
 }
