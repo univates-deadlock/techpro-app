@@ -127,3 +127,22 @@ export function formatDateTime(isoString: string | null | undefined): string {
     minute: "2-digit",
   });
 }
+
+/** Formats date-only values ("2026-12-01" or "2026-12-01T00:00:00.000Z") as "01/12/2026". Never builds a Date, so no timezone shifts the day. */
+export function formatDateOnly(value: string | null | undefined): string {
+  if (!value) return "-";
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return "-";
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
+/** Whole days from today (local calendar) to a date-only value. Negative = already past. */
+export function daysUntilDateOnly(value: string): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return null;
+  const target = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((target - today) / 86_400_000);
+}

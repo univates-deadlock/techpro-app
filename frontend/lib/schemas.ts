@@ -321,3 +321,52 @@ export const rejectQuoteSchema = z.object({
 
 export type ApproveQuoteInput = z.infer<typeof approveQuoteSchema>;
 export type RejectQuoteInput = z.infer<typeof rejectQuoteSchema>;
+
+/* ==========================================================================
+   Warranties — mirrors api warranty schemas
+   ========================================================================== */
+
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export const warrantySchema = z
+  .object({
+    serviceId: z.string().trim().min(1, "Selecione um serviço."),
+    type: z.enum(["SERVICE", "MANUFACTURER"], {
+      error: "Selecione o tipo de garantia.",
+    }),
+    startsAt: z
+      .string()
+      .trim()
+      .min(1, "Informe a data de início.")
+      .regex(DATE_ONLY_RE, "Data de início inválida."),
+    endsAt: z
+      .string()
+      .trim()
+      .min(1, "Informe a data de término.")
+      .regex(DATE_ONLY_RE, "Data de término inválida."),
+    description: z.string().trim().optional(),
+    manufacturer: z.string().trim().optional(),
+    productReference: z.string().trim().optional(),
+  })
+  .refine((data) => data.endsAt >= data.startsAt, {
+    message: "A data de término deve ser posterior ou igual à data de início.",
+    path: ["endsAt"],
+  });
+
+export type WarrantyInput = z.infer<typeof warrantySchema>;
+
+/* ==========================================================================
+   Revisions — mirrors api revision schemas
+   ========================================================================== */
+
+export const revisionSchema = z.object({
+  serviceId: z.string().trim().min(1, "Selecione um serviço."),
+  scheduledAt: z
+    .string()
+    .trim()
+    .min(1, "Informe a data prevista.")
+    .regex(DATE_ONLY_RE, "Data prevista inválida."),
+  notes: z.string().trim().optional(),
+});
+
+export type RevisionInput = z.infer<typeof revisionSchema>;
