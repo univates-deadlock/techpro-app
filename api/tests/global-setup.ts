@@ -7,35 +7,35 @@ import type { TestProject } from "vitest/node";
 declare module "vitest" {
   interface ProvidedContext {
     testDatabaseUrl: string;
+    testStorageUrl: string;
   }
 }
 
 export default async function setup(project: TestProject) {
-  const containerName = `techpro-api-test-${randomUUID()}`;
+  const suffix = randomUUID();
+  const dbContainer = "techpro-db-test-" + suffix;
+  const s3Container = "techpro-s3-test-" + suffix;
   const password = randomUUID();
-  const docker = (...args: string[]) =>
-    execFileSync("docker", args, { encoding: "utf8", timeout: 120_000 });
-  let started = false;
+  const started: string[] = [];
 
-  // Verify Docker is running before attempting to start a container
+  const docker = (...args: string[]) =>
+    execFileSync("docker", args, { encoding: "utf8", timeout: 240_000 });
+
   try {
     docker("info");
   } catch {
-    throw new Error(
-      "Docker is not available or the Docker daemon is not running. " +
-      "Integration tests require Docker to spin up an isolated, disposable PostgreSQL container."
-    );
+    throw new Error("Integration tests require a working Docker daemon");
   }
 
   const cleanup = () => {
-    if (started) {
+    for (const name of started.reverse()) {
       try {
-        docker("rm", "--force", containerName);
+        docker("rm", "--force", name);
       } catch {
-        // Container might have already been removed
+        // Container may already be removed.
       }
-      started = false;
     }
+    started.length = 0;
   };
 
   process.once("SIGINT", cleanup);
@@ -43,65 +43,76 @@ export default async function setup(project: TestProject) {
 
   try {
     docker(
-      "run",
-      "--rm",
-      "--detach",
-      "--name",
-      containerName,
-      "--env",
-      `POSTGRES_PASSWORD=${password}`,
-      "--env",
-      "POSTGRES_DB=api_test",
-      "--publish",
-      "127.0.0.1::5432",
-      "postgres:17-alpine"
+      "run", "--rm", "--detach", "--name", dbContainer,
+      "--env", "POSTGRES_PASSWORD=" + password,
+      "--env", "POSTGRES_DB=api_test",
+      "--publish", "127.0.0.1::5432", "postgres:17-alpine",
     );
-    started = true;
+    started.push(dbContainer);
 
-    const deadline = Date.now() + 30_000;
+    const dbDeadline = Date.now() + 30_000;
     while (true) {
       try {
-        docker(
-          "exec",
-          containerName,
-          "pg_isready",
-          "--host=127.0.0.1",
-          "--username=postgres",
-          "--dbname=api_test"
-        );
+        docker("exec", dbContainer, "pg_isready", "--host=127.0.0.1", "--username=postgres", "--dbname=api_test");
         break;
       } catch {
-        if (Date.now() >= deadline) {
-          throw new Error("Disposable PostgreSQL container did not become ready within 30 seconds");
+        if (Date.now() >= dbDeadline) {
+          throw new Error("Disposable PostgreSQL did not become ready");
         }
         await setTimeout(200);
       }
     }
 
-    const binding = docker("port", containerName, "5432/tcp").trim();
-    const port = binding.match(/^127\.0\.0\.1:(\d+)$/)?.[1];
-    if (!port) throw new Error("Could not determine the disposable PostgreSQL port");
+    const dbPort = docker("port", dbContainer, "5432/tcp")
+      .trim().match(/^127\.0\.0\.1:(\d+)$/)?.[1];
+    if (!dbPort) throw new Error("Could not determine disposable PostgreSQL port");
 
-    const databaseUrl = `postgresql://postgres:${password}@127.0.0.1:${port}/api_test`;
+    const databaseUrl = "postgresql://postgres:" + password + "@127.0.0.1:" + dbPort + "/api_test";
     const apiDirectory = fileURLToPath(new URL("../", import.meta.url));
 
     execFileSync(
       process.execPath,
-      [
-        fileURLToPath(new URL("../node_modules/prisma/build/index.js", import.meta.url)),
-        "migrate",
-        "deploy",
-      ],
+      [fileURLToPath(new URL("../node_modules/prisma/build/index.js", import.meta.url)), "migrate", "deploy"],
       {
         cwd: apiDirectory,
         env: { ...process.env, DATABASE_URL: databaseUrl },
         stdio: "pipe",
         timeout: 60_000,
-      }
+      },
     );
 
-    project.provide("testDatabaseUrl", databaseUrl);
+    docker(
+      "run", "--rm", "--detach", "--name", s3Container,
+      "--env", "RUSTFS_ACCESS_KEY=techpro-test",
+      "--env", "RUSTFS_SECRET_KEY=techpro-test-secret",
+      "--env", "RUSTFS_CONSOLE_ENABLE=false",
+      "--env", "RUSTFS_VOLUMES=/data",
+      "--publish", "127.0.0.1::9000", "rustfs/rustfs:1.0.4",
+    );
+    started.push(s3Container);
 
+    const s3Port = docker("port", s3Container, "9000/tcp")
+      .trim().match(/^127\.0\.0\.1:(\d+)$/)?.[1];
+    if (!s3Port) throw new Error("Could not determine disposable S3 port");
+    const storageUrl = "http://127.0.0.1:" + s3Port;
+    const s3Deadline = Date.now() + 60_000;
+    while (true) {
+      try {
+        const response = await fetch(storageUrl + "/health", {
+          signal: AbortSignal.timeout(2500),
+        });
+        if (response.ok) break;
+      } catch {
+        // RustFS is still initializing.
+      }
+      if (Date.now() >= s3Deadline) {
+        throw new Error("Disposable RustFS did not become ready");
+      }
+      await setTimeout(500);
+    }
+
+    project.provide("testDatabaseUrl", databaseUrl);
+    project.provide("testStorageUrl", storageUrl);
     return () => {
       process.removeListener("SIGINT", cleanup);
       process.removeListener("SIGTERM", cleanup);

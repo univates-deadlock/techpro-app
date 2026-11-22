@@ -8,6 +8,11 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: httpUrl.default("http://localhost:4000"),
   FE_BASE_URL: httpUrl.default("http://localhost:3000"),
+  S3_ENDPOINT: httpUrl.optional(),
+  S3_REGION: z.string().trim().min(1).default("us-east-1"),
+  S3_BUCKET: z.string().trim().min(3).default("techpro-evidences"),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
