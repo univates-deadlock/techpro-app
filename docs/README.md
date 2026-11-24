@@ -24,7 +24,8 @@ A [matriz de entrega final](entrega-final.md) é a fonte de referência para fun
 - [Fluxo de decisões de orçamento](quote-workflow.md)
 - [API de garantias, revisões e alertas](aftercare-api.md)
 - [Evidências de orçamento via S3/RustFS](quote-evidence.md)
-- [PR #116 — agendamento de visitas, aguardando integração](https://github.com/univates-deadlock/techpro-app/pull/116)
+- [Contrato da API de visitas](visit-api.md)
+- [PR #116 — API de agendamento de visitas](https://github.com/univates-deadlock/techpro-app/pull/116)
 
 ---
 

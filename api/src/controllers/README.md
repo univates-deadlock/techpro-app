@@ -12,5 +12,6 @@ Padrões dos controllers atuais:
 - `client.controller.ts`: recebe campos diretamente no body, responde `201` na criação e `200` com JSON nas consultas, edições, ativação, inativação e `DELETE` lógico.
 - `quote.controller.ts`: valida filtros de listagem (`req.query`), payload de orçamento e itens, obtém `createdBy` de `res.locals.user.id` e responde `204` na exclusão física de rascunhos (`DRAFT`).
 - `service.controller.ts`: valida filtros de listagem (`req.query`), payload de serviço e mudança de status, obtém `createdBy` de `res.locals.user.id` e responde `201` na criação e `200` nas demais operações.
+- `visit.controller.ts`: recebe campos diretamente no body, lê o UUID do serviço em `req.params.id` nas sub-rotas `/services/:id/visits` e o UUID da visita nas rotas de `/visits/:id`, valida filtros de listagem (`req.query`) e responde `201` no agendamento e `200` nas consultas, edições e na troca de técnicos (`PUT /visits/:id/technicians`). Quando o service devolve conflito de horário de técnicos, responde `409` com `{ error, conflicts, confirmation }` sem ter gravado nada; o cliente confirma reenviando com `confirmConflicts: true`. Não expõe exclusão: visitas não são apagadas.
 
 Não realize consultas Prisma, cálculos de negócio ou hashing de senha nos controllers; mantenha essas operações em `services/`.
