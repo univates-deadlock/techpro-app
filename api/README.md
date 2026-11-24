@@ -37,10 +37,11 @@ Em `src/app.ts`, os middlewares e roteadores são registrados exatamente nesta o
 8. /api/clients          → CRUD de clientes
 9. /api/quotes           → CRUD de orçamentos e sub-rotas de itens
 10. /api/services         → gestão de serviços
-11. /api/warranties       → garantias
-12. /api/revisions        → revisões
-13. /api                  → alertas e dashboard
-14. globalErrorHandler   → padronização de erros Zod, AppError, Prisma e fallback 500
+11. /api/visits           → planejamento e atribuição de técnicos
+12. /api/warranties       → garantias
+13. /api/revisions        → revisões
+14. /api                  → alertas e dashboard
+15. globalErrorHandler   → padronização de erros Zod, AppError, Prisma e fallback 500
 ```
 
 Nos módulos de negócio, o fluxo segue estritamente:
@@ -177,7 +178,7 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ## Rotas registradas e contratos HTTP
 
-A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). O planejamento de visitas está implementado e validado no PR #116, aguardando integração; agenda e execução técnica ficam no pós-MVP. Consulte a [matriz de entrega](../docs/entrega-final.md).
+A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). O planejamento de visitas (`/api/visits` e `/api/services/:id/visits`) está documentado no [contrato de visitas](../docs/visit-api.md); agenda individual e execução técnica ficam no pós-MVP. Consulte a [matriz de entrega](../docs/entrega-final.md).
 
 Os testes HTTP automatizados estão em `api/tests/` e usam um PostgreSQL descartável.
 

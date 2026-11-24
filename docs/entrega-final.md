@@ -12,12 +12,12 @@ A entrega foi congelada por decisão de escopo da equipe. O PRD original preserv
 | Garantias e revisões | Interface de listagem, criação e edição; alteração de status de revisões; API com operações adicionais | PRs #113, #117; [contrato](aftercare-api.md) |
 | Alertas e dashboard | API e indicadores comerciais/operacionais reais para ADMIN/PLANNING; sem agenda individual do técnico | PR #113 |
 | Evidências de aprovação | API de upload/leitura privada S3, testada em ambiente descartável; UI de upload e comprovação de configuração em produção pendentes | PR #114; [contrato](quote-evidence.md) |
-| Visitas e atribuição | Backend implementado e CI aprovada na branch do PR #116, mas merge bloqueado por revisão obrigatória; não integra a main nesta fotografia | [PR #116](https://github.com/univates-deadlock/techpro-app/pull/116), [CI](https://github.com/univates-deadlock/techpro-app/actions/runs/45305902264) |
+| Visitas e atribuição | API de planejamento, atribuição e consulta para ADMIN/PLANNING, com verificação de conflitos; sem agenda individual, execução ou interface | [PR #116](https://github.com/univates-deadlock/techpro-app/pull/116), [CI](https://github.com/univates-deadlock/techpro-app/actions/runs/45305902264) |
 
 ### Evolução pós-MVP (backlog)
 
 - Interface de serviços, conversão de orçamento aprovado em serviço pela UI, filtros operacionais e histórico consolidado do cliente (#70, #85, #86).
-- Finalizar integração do PR #116 e desenvolver interface de agendamento/atribuição, agenda pessoal com autorização por vínculo e registro de início, término, observações e transições das visitas (#72–#74, #79–#81; RF13–RF16). Não apresentar esses fluxos como disponíveis no navegador.
+- Desenvolver interface de agendamento/atribuição, agenda pessoal com autorização por vínculo e registro de início, término, observações e transições das visitas (#72–#74, #79–#81; RF13–RF16). Não apresentar esses fluxos como disponíveis no navegador.
 - Expiração pela UI, anexar/visualizar evidências de forma integrada e validar armazenamento privado/persistência no ambiente publicado (#65–#67; RF09, RF23, RNF08). A aprovação de orçamento funciona sem anexo.
 - Recuperação/alteração de senha, visão técnica do dashboard e eventuais ações adicionais de garantias/revisões (por exemplo, exclusão pela interface).
 - Validação ponta a ponta e testes adicionais de regressão, permissões, segurança, responsividade, acessibilidade, navegadores e desempenho (RNF05; #87–#95); homologação da publicação, smoke test, persistência e rollback (#99–#107). CI não substitui homologação.
@@ -26,8 +26,8 @@ A entrega foi congelada por decisão de escopo da equipe. O PRD original preserv
 
 ### Rastreabilidade do PRD
 
-RF01–RF08: núcleo integrado; RF09: interface parcial (expiração via API); RF10–RF12: API, interface futura; RF13–RF14: PR #116 validado mas não integrado; RF15–RF16: pós-MVP; RF17–RF20: APIs e interfaces/indicadores integrados; RF21–RF22: cobertura parcial, sem experiência operacional completa; RF23: API integrada, interface e implantação de armazenamento pendentes. RNF09 foi adiado; RNF05 e verificações abrangentes de QA não possuem comprovação final nesta entrega. Os demais requisitos permanecem como especificação, não certificação de conformidade.
+RF01–RF08: núcleo integrado; RF09: interface parcial (expiração via API); RF10–RF12: API, interface futura; RF13–RF14: planejamento e atribuição pela API, com localização derivada do cliente e sem interface; RF15–RF16: pós-MVP; RF17–RF20: APIs e interfaces/indicadores integrados; RF21–RF22: cobertura parcial, sem experiência operacional completa; RF23: API integrada, interface e implantação de armazenamento pendentes. RNF09 foi adiado; RNF05 e verificações abrangentes de QA não possuem comprovação final nesta entrega. Os demais requisitos permanecem como especificação, não certificação de conformidade.
 
 ### Validação e operação
 
-Os PRs #108, #110, #112, #113, #114 e #117 estão integrados. O CI do #117 passou nos jobs API e Frontend; o do #116 também passou após a resolução de conflito e ajustes de fixtures. A aplicação possui pipeline de CI/CD e ambiente publicado previsto em https://app.matbdev.com; o estado da implantação e a aceitação pelo cliente não foram revalidados nesta revisão. Consulte o [guia de deploy](deploy.md) e o [Kanban consolidado](https://github.com/univates-deadlock/techpro-app/issues/109).
+Os PRs #108, #110, #112, #113, #114, #116 e #117 compõem a entrega. O CI do #117 passou nos jobs API e Frontend; o do #116 também passou após a resolução de conflito e ajustes de fixtures. A aplicação possui pipeline de CI/CD e ambiente publicado previsto em https://app.matbdev.com; o estado da implantação e a aceitação pelo cliente não foram revalidados nesta revisão. Consulte o [guia de deploy](deploy.md) e o [Kanban consolidado](https://github.com/univates-deadlock/techpro-app/issues/109).

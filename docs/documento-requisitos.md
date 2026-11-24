@@ -124,7 +124,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 
 ## 5.3 Evoluções futuras — fora do MVP
 
-Além dos itens originalmente previstos para evolução, foram adiados no fechamento: interface de serviços e visitas, agenda e execução dos técnicos (RF10–RF16 na cobertura de interface/visitas), expiração e evidências pela interface (RF09/RF23), histórico consolidado, filtros operacionais, recuperação de senha, backup (RNF09) e validação ampliada de QA/produção (incluindo RNF05). A API de serviços, garantias/revisões e indicadores permanece integrada; a API de visitas está validada no PR #116, aguardando merge. Veja a [matriz de rastreabilidade](entrega-final.md).
+Além dos itens originalmente previstos para evolução, foram adiados no fechamento: interface de serviços e visitas, agenda e execução dos técnicos (RF10–RF16 na cobertura de interface/visitas), expiração e evidências pela interface (RF09/RF23), histórico consolidado, filtros operacionais, recuperação de senha, backup (RNF09) e validação ampliada de QA/produção (incluindo RNF05). A API de serviços, garantias/revisões e indicadores permanece integrada; a API de planejamento de visitas e atribuição de técnicos é contemplada pelo PR #116, sem interface, agenda individual ou execução. Veja a [matriz de rastreabilidade](entrega-final.md).
 
 - Automação de orçamento, sujeita a reavaliação com o cliente.
 - Pesquisa automática de preços e integração com catálogos/fornecedores. 

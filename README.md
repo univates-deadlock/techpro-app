@@ -78,7 +78,7 @@ A referência é o código integrado à main em 24/11/2026; veja a [matriz de en
 | Garantias e revisões | Listagem, criação e edição integradas à API; status de revisões e alertas |
 | Dashboard | Indicadores reais de orçamentos e pós-serviço para ADMIN/PLANNING |
 | Evidências | API autenticada e armazenamento privado S3; UI de upload e validação de produção futuras |
-| Visitas | PR #116 com CI aprovada, aguardando revisão obrigatória; não integrado à main nesta revisão |
+| Visitas | API de agendamento, atribuição de técnicos e verificação de conflitos (PR #116); interface, agenda individual e execução técnica pós-MVP |
 
 A agenda e a execução pelo técnico, a interface de serviços/visitas e os controles de qualidade e infraestrutura não comprovados foram transferidos para o pós-MVP. Não confundir a presença de modelos no Prisma ou de telas reservadas com funcionalidade entregue.
 
