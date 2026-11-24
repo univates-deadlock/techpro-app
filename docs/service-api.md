@@ -1,8 +1,6 @@
 # API de serviços — fluxo crítico
 
-Este guia acompanha a implementação de serviços no PR #112. Os contratos
-descrevem a **branch de desenvolvimento**, não uma funcionalidade já
-publicada em produção. As regras seguem o PRD (RN-SRV-01 / RN-SRV-02).
+O PR #112 foi integrado à main. Este contrato descreve a API de serviços; a interface de criação e gestão de serviços permanece pós-MVP. As regras seguem o PRD (RN-SRV-01 / RN-SRV-02).
 
 ## Autorização e rotas
 
@@ -80,4 +78,4 @@ npm run test:integration --prefix api
 
 Os cenários de agenda, visitas e execução pertencem às issues #72, #74
 e #79; não devem ser considerados cobertos por esta suíte. A validação
-ponta a ponta com orçamento e frontend depende de #64 e #70.
+ponta a ponta no navegador depende da futura interface #70; o fluxo de decisão de orçamento já está integrado.

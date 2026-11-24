@@ -103,9 +103,7 @@ específica do técnico depende dos módulos de visitas do grupo.
 ## Dependências de integração
 
 Os modelos Prisma já estão versionados: não foi criada nova migration.
-A criação operacional de serviços está no PR #112 e precisa ser integrada
-antes da demonstração ponta a ponta com garantias e revisões.
-O fluxo de orçamento e decisão está nos PRs #108 e #110.
+A API de serviços (PR #112), o fluxo de decisão de orçamento (PRs #108 e #110) e as interfaces de garantias e revisões (PR #117) foram integrados à main. A criação de serviços pelo navegador permanece pós-MVP.
 
 ## Testes automatizados críticos
 
@@ -128,6 +126,4 @@ npm run test:integration --prefix api
 ```
 
 Os testes de integração utilizam um PostgreSQL descartável com Docker e
-não acessam dados de produção. A integração real com serviços/visitas,
-telas e permissões em ambiente publicado ainda depende do merge
-dos demais módulos.
+não acessam dados de produção. A validação funcional no ambiente publicado não foi comprovada nesta revisão. A agenda/execução técnica e a integração das visitas permanecem no backlog.

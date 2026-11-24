@@ -36,7 +36,11 @@ Em `src/app.ts`, os middlewares e roteadores são registrados exatamente nesta o
 7. /api/users            → CRUD administrativo de usuários
 8. /api/clients          → CRUD de clientes
 9. /api/quotes           → CRUD de orçamentos e sub-rotas de itens
-10. globalErrorHandler   → padronização de erros Zod, AppError, Prisma e fallback 500
+10. /api/services         → gestão de serviços
+11. /api/warranties       → garantias
+12. /api/revisions        → revisões
+13. /api                  → alertas e dashboard
+14. globalErrorHandler   → padronização de erros Zod, AppError, Prisma e fallback 500
 ```
 
 Nos módulos de negócio, o fluxo segue estritamente:
@@ -173,7 +177,7 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ## Rotas registradas e contratos HTTP
 
-A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). Os módulos de visitas técnicas permanecem pendentes.
+A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). O planejamento de visitas está implementado e validado no PR #116, aguardando integração; agenda e execução técnica ficam no pós-MVP. Consulte a [matriz de entrega](../docs/entrega-final.md).
 
 Os testes HTTP automatizados estão em `api/tests/` e usam um PostgreSQL descartável.
 
@@ -288,7 +292,7 @@ Aprovação, rejeição e expiração retornam o orçamento detalhado com o novo
 }
 ```
 
-A API extrai `sentBy` e `decidedBy` da sessão; os registros anteriores à migration podem retornar esses campos como `null`. O upload protegido de evidências está descrito na [issue #66](https://github.com/univates-deadlock/techpro-app/issues/66).
+A API extrai `sentBy` e `decidedBy` da sessão; os registros anteriores à migration podem retornar esses campos como `null`. O upload protegido de evidências está integrado na API ([contrato](../docs/quote-evidence.md)); a interface e a validação do armazenamento em produção permanecem no backlog.
 
 As quatro rotas retornam `400` se o ID ou o corpo for inválido, `401` sem sessão válida, `403` para perfil sem acesso, `404` para orçamento inexistente e `409` para transição incompatível com o status atual, decisão repetida ou tentativa de enviar um rascunho vazio.
 
