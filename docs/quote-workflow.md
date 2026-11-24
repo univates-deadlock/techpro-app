@@ -1,7 +1,7 @@
 # Fluxo de decisões de orçamento — UI e API
 
 Esta documentação descreve o contrato usado pelo detalhe de orçamento na
-branch de frontend **PR #108**, ainda em revisão. Ela complementa o guia
+main após integração dos PRs #108 e #110. Ela complementa o guia
 da API em [api/README.md](../api/README.md).
 
 ## Fluxo de uso
@@ -20,7 +20,7 @@ mais ser editado.
 
 Rotas de planejamento exigem sessão ADMIN ou PLANNING. Outros perfis
 recebem 401/403. Fluxos de decisão mais completos, auditoria de autoria,
-expiração e concorrência estão no PR #110, empilhado sobre o #108.
+expiração e concorrência foram integrados pelo PR #110. A expiração manual está disponível via API; sua ação na UI fica no pós-MVP.
 
 ## Teste crítico de integração
 
@@ -35,5 +35,4 @@ npm run test:integration --prefix api
 
 Os testes utilizam PostgreSQL descartável, Better Auth e Supertest.
 A interação visual (modais, layout e mensagens) deve ser validada
-manualmente na revisão da interface. A presença do teste nesta branch
-não indica que o PR #108 já foi integrado à main.
+manualmente na revisão da interface. O teste integra a suíte da API na main; não substitui a validação visual.

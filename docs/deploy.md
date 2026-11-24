@@ -160,4 +160,4 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://app.matbdev.com/login
 
 ## 6. Limitações atuais da infraestrutura
 
-- Os arquivos [`../api/Dockerfile`](../api/Dockerfile) e [`../frontend/Dockerfile`](../frontend/Dockerfile) instalam dependências e iniciam servidores de desenvolvimento (`tsx watch` e `next dev --webpack`) montando os diretórios de código como volumes. Essa configuração atende às demonstrações acadêmicas da disciplina, mas antes de uso produtivo definitivo deve ser convertida para imagens multi-stage executando builds compilados (`npm run build` + `npm run start`), acompanhadas de rotina automatizada de backup do PostgreSQL (`RNF09`).
+- A API ainda utiliza execução em modo de desenvolvimento (`npm run dev`); o frontend já utiliza Dockerfile multi-stage e `npm run start` em produção. A adoção produtiva definitiva requer revisar o runtime da API, realizar homologação da infraestrutura e configurar backup automático/restauração (RNF09, issue #98, fora do MVP). Ver [entrega final](entrega-final.md).

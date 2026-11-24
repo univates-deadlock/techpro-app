@@ -13,7 +13,7 @@
 - Mateus Carniel Brambilla
 - Taina Luiza Schmidt
 
-> **Nota sobre escopo e implementação:** este documento especifica o produto completo planejado (MVP) e suas regras de negócio. Para consultar o que já está implementado na entrega atual (Parcial 2), veja o [README principal](../README.md) e o [índice da documentação](./README.md).
+ > **Nota de fechamento (24/11/2026):** este documento preserva os requisitos e casos de uso originalmente levantados. O MVP efetivamente entregue é menor; consulte a [matriz de entrega final e backlog pós-MVP](entrega-final.md). As funcionalidades adiadas não são consideradas concluídas.
 
 ---
 
@@ -25,7 +25,7 @@
 3. [Solução Proposta](#3-solução-proposta)
 4. [Objetivos e Critérios de Sucesso](#4-objetivos-e-critérios-de-sucesso)
 5. [Escopo](#5-escopo)
-   - [5.1 MVP obrigatório](#51-mvp-obrigatório)
+   - [5.1 Escopo originalmente previsto para o MVP](#51-escopo-originalmente-previsto-para-o-mvp)
    - [5.2 Opcional / meta adicional do MVP](#52-opcional--meta-adicional-do-mvp)
    - [5.3 Evoluções futuras — fora do MVP](#53-evoluções-futuras--fora-do-mvp)
 6. [Usuários e Atores](#6-usuários-e-atores)
@@ -102,7 +102,7 @@ Construir uma aplicação web exclusivamente interna para registrar e acompanhar
 
 # 5. Escopo
 
-## 5.1 MVP obrigatório
+## 5.1 Escopo originalmente previsto para o MVP
 
 - Autenticação e perfis de acesso: gestor, orçamento/planejamento e técnico.
 - Cadastro de clientes, com suas devidas informações.
@@ -123,6 +123,8 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 - Visões adicionais no painel operacional para funil comercial e indicadores, desde que não comprometam requisitos obrigatórios.
 
 ## 5.3 Evoluções futuras — fora do MVP
+
+Além dos itens originalmente previstos para evolução, foram adiados no fechamento: interface de serviços e visitas, agenda e execução dos técnicos (RF10–RF16 na cobertura de interface/visitas), expiração e evidências pela interface (RF09/RF23), histórico consolidado, filtros operacionais, recuperação de senha, backup (RNF09) e validação ampliada de QA/produção (incluindo RNF05). A API de serviços, garantias/revisões e indicadores permanece integrada; a API de visitas está validada no PR #116, aguardando merge. Veja a [matriz de rastreabilidade](entrega-final.md).
 
 - Automação de orçamento, sujeita a reavaliação com o cliente.
 - Pesquisa automática de preços e integração com catálogos/fornecedores. 
@@ -444,6 +446,8 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 - Indicadores adicionais no painel operacional além do conjunto mínimo definido em RF21.
 
 ## 13.2 Fora do MVP
+
+- Todas as pendências do [backlog pós-MVP da entrega final](entrega-final.md), incluindo agenda/execução técnica, interfaces operacionais, anexos na UI, backup e homologação.
 
 - Automatizar pesquisa de preço.  
 - Descobrir licitações automaticamente.  

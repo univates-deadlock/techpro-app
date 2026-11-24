@@ -5,7 +5,7 @@
 # TechPro
 
 Sistema web interno para gestão do fluxo comercial e operacional **cliente → orçamento → serviço → visita**.<br>
-Projeto desenvolvido na disciplina de **Laboratório de Programação para Internet** da **Univates** (Parcial 2).
+Projeto desenvolvido na disciplina de **Laboratório de Programação para Internet** da **Univates** (entrega final).
 
 </div>
 
@@ -13,7 +13,7 @@ Projeto desenvolvido na disciplina de **Laboratório de Programação para Inter
 
 ## 1. Apresentação e objetivo
 
-A **TechPro** atua em segurança eletrônica e automação residencial, comercial e industrial. O sistema interno foi projetado para centralizar o histórico de clientes, a elaboração e o acompanhamento de orçamentos, o planejamento de serviços e visitas técnicas e o controle futuro de garantias e revisões, reduzindo a dispersão de informações entre WhatsApp, planilhas e controles paralelos.
+A **TechPro** atua em segurança eletrônica e automação residencial, comercial e industrial. O sistema interno foi projetado para centralizar o histórico de clientes, a elaboração e o acompanhamento de orçamentos, o planejamento de serviços e visitas técnicas e o controle de garantias e revisões, reduzindo a dispersão de informações entre WhatsApp, planilhas e controles paralelos.
 
 **Fronteira do produto:** esta aplicação é exclusivamente interna e **não substitui** o software já utilizado pela empresa para controle de estoque e emissão da Ordem de Serviço (OS) oficial. Não há integração automática com o sistema externo no escopo do MVP.
 
@@ -66,44 +66,21 @@ Em implantação na VM da Univates, os containers `api` e `frontend` conectam-se
 
 ---
 
-## 5. Estado atual das funcionalidades (Parcial 2)
+## 5. Estado das funcionalidades — entrega final
 
-A classificação abaixo reflete exclusivamente o que está implementado no código da branch `main` (a presença de modelos no Prisma ou páginas de espaço reservado não caracteriza módulo concluído):
+A referência é o código integrado à main em 24/11/2026; veja a [matriz de entrega e backlog pós-MVP](docs/entrega-final.md) para rastreabilidade e evidências.
 
-### 5.1 Implementadas e integradas ao frontend
+| Módulo | Entrega |
+| --- | --- |
+| Autenticação, usuários e clientes | Interface e API, sessão e autorização por perfil |
+| Orçamentos | CRUD, itens, cálculo, envio, aprovação, rejeição e exportação PDF; expiração pela API |
+| Serviços | API de gestão, origem direta ou orçamento aprovado, referência à OS externa; UI ainda em desenvolvimento |
+| Garantias e revisões | Listagem, criação e edição integradas à API; status de revisões e alertas |
+| Dashboard | Indicadores reais de orçamentos e pós-serviço para ADMIN/PLANNING |
+| Evidências | API autenticada e armazenamento privado S3; UI de upload e validação de produção futuras |
+| Visitas | PR #116 com CI aprovada, aguardando revisão obrigatória; não integrado à main nesta revisão |
 
-- **Autenticação e gerenciamento de sessão:** login com e-mail e senha (`/login`), persistência de sessão no PostgreSQL com cookie HTTP-only, validação SSR de sessão ativa nas rotas internas, bloqueio de usuários inativos e logout. Provisionamento local do primeiro administrador via script `admin:create`.
-- **Gestão de usuários (`/usuarios` e `/api/users`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil, ativação e desativação lógica (`isActive`), com revogação automática de sessões e proteção contra remoção ou desativação do próprio usuário ou do último administrador ativo.
-- **Gestão de clientes (`/clientes` e `/api/clients`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição de clientes Pessoa Física (`INDIVIDUAL`) e Pessoa Jurídica (`COMPANY`) com máscaras e validação de dígitos verificadores de CPF/CNPJ e DDD/telefone brasileiro, validação de unicidade de e-mail, ativação e inativação lógica (`active`).
-- **Gestão de orçamentos e itens em elaboração (`/orcamentos`, `/orcamentos/[id]` e `/api/quotes`):** listagem com busca local e filtro por status, visualização detalhada com resumo financeiro (discriminando descontos por item e desconto geral em `R$`) e histórico, criação de orçamento em rascunho (`DRAFT`) vinculado a cliente ativo, edição atômica de observações, desconto geral (`R$`) e itens (`PRODUCT`, `SERVICE`, `OTHER`, com desconto por item em `R$`), recálculo exato no servidor com `Decimal(12, 2)` e exclusão física restrita a rascunhos (`DRAFT`).
-
-### 5.2 Implementadas apenas no backend
-
-- **Verificação de disponibilidade (`GET /api/health`):** endpoint público utilizado pelos healthchecks do Docker Compose e pela validação de deploy.
-- **Filtros de consulta na API e endpoints auxiliares:** filtragem de orçamentos por query string (`GET /api/quotes?clientId=...&status=...`), busca individual por ID em usuários (`GET /api/users/:id`) e clientes (`GET /api/clients/:id`), e rotas `DELETE` equivalentes à desativação lógica em `/api/users/:id` e `/api/clients/:id`.
-
-### 5.3 Parcialmente implementadas
-
-- **Ciclo de decisão do orçamento:** a tela de detalhe registra envio, aprovação e rejeição. A API também permite registrar a expiração manual e guarda a data e o usuário responsável pelo envio e pela decisão. Consultar o [contrato da API](api/README.md#registro-de-envio-e-decisão).
-- **Dashboard operacional (`/`):** para `ADMIN` e `PLANNING`, apresenta cartões de indicadores ("Em aberto", "Aguardando decisão", "Rascunhos", "Valor em aberto"), lista de orçamentos pendentes e contagem por status calculados a partir de `GET /api/quotes`; para `TECHNICIAN`, exibe apenas o painel operacional de serviços/visitas sem requisitar dados comerciais restritos. Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a implementação desses módulos.
-- **Experiência do perfil `TECHNICIAN`:** o perfil é autenticado e devidamente bloqueado pela API (`403`) nos módulos administrativos e comerciais. Na interface, páginas restritas (`Clientes`, `Orçamentos`, `Garantias`, `Revisões` e `Usuários`) são ocultadas na barra lateral e redirecionam para `/` no servidor (`requireRoleSession`) caso acessadas por URL direta, restando implementar seus endpoints e telas próprias de agenda/execução.
-
-### 5.4 Apenas modeladas no banco de dados
-
-As tabelas e enums abaixo já existem em [`api/prisma/schema.prisma`](api/prisma/schema.prisma) e nas migrations, mas **não possuem rotas, controllers ou services na API**; no frontend, `/servicos`, `/garantias` e `/revisoes` exibem o componente `DevPage` ("Em desenvolvimento"):
-
-- **Serviços** (`Service`, `ServiceOrigin`)
-- **Visitas técnicas e alocação de técnicos** (`ServiceVisit`, `VisitTechnician`)
-- **Garantias de serviço e fabricante** (`Warranty`, `WarrantyType`)
-- **Revisões programadas** (`Revision`, `RevisionStatus`)
-- **Verificações auxiliares do Better Auth** (`Verification`)
-
-### 5.5 Planejadas e ainda não implementadas
-
-- Ação de expiração na interface e upload protegido de evidências de aprovação.
-- Módulos completos de serviços, agendamento de visitas, atribuição/agenda de técnicos, garantias, revisões e alertas operacionais internos.
-- Alteração e recuperação de senha de usuários.
-- Módulo opcional de acompanhamento manual de licitações.
+A agenda e a execução pelo técnico, a interface de serviços/visitas e os controles de qualidade e infraestrutura não comprovados foram transferidos para o pós-MVP. Não confundir a presença de modelos no Prisma ou de telas reservadas com funcionalidade entregue.
 
 ---
 
@@ -113,9 +90,9 @@ Toda autorização real é validada no backend a partir da sessão verificada (`
 
 | Perfil | Papel no negócio | Permissões implementadas atualmente |
 | --- | --- | --- |
-| `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. |
+| `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços pela API, garantias, revisões e dashboard. |
 | `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. Recebe `403` em `/api/users` (link "Usuários" oculto na barra lateral). |
-| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/servicos`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` em `/api/users`, `/api/clients` e `/api/quotes`. Suas funcionalidades operacionais (agenda e registro de visitas) pertencem às próximas entregas. |
+| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/servicos`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` em `/api/users`, `/api/clients` e `/api/quotes`. Suas funcionalidades operacionais (agenda e registro de visitas) ficam no backlog pós-MVP. |
 
 ---
 
@@ -126,7 +103,7 @@ techpro-app/
 ├── api/                  # API REST (Express 5, TypeScript, Zod, Prisma 7, Better Auth)
 │   ├── prisma/           # Schema relacional e migrations versionadas
 │   ├── src/              # Código-fonte em camadas (routes, middlewares, controllers, schemas, services)
-│   └── tests/            # Coleções HTTP manuais (.http) para clientes e orçamentos
+│   └── tests/            # Testes unitários e de integração HTTP/PostgreSQL/S3
 ├── frontend/             # Aplicação web (Next.js App Router, React 19, Tailwind CSS 4)
 │   ├── app/              # Rotas públicas (/login) e grupo autenticado ((protected)/)
 │   ├── components/       # Shell de layout, primitivos de UI e telas dos módulos
@@ -318,28 +295,27 @@ O fluxo de integração e entrega contínua está dividido entre este repositór
 
 ---
 
-## 13. Roteiro de apoio para demonstração acadêmica (Parcial 2)
+## 13. Roteiro de apoio para demonstração acadêmica (entrega final)
 
 Para conduzir a apresentação técnica do projeto de forma alinhada ao código atual:
 
 1. **Autenticação e controle de sessão:** demonstrar redirecionamento automático para `/login`, tentativa com credencial inválida (`401`), login como `ADMIN`, persistência por cookie HTTP-only e encerramento de sessão (`Sair`).
 2. **Autorização por perfis:** demonstrar a gestão de usuários exclusiva para `ADMIN` (`/usuarios`), o acesso compartilhado de `ADMIN` e `PLANNING` em `/clientes` e `/orcamentos`, o bloqueio no backend (`403`) ao tentar acessar recursos sem permissão e a revogação imediata de sessão ao desativar um usuário.
 3. **CRUDs e regras de negócio:** demonstrar cadastro/edição/inativação lógica de clientes (com máscaras CPF/CNPJ e WhatsApp) e o fluxo de orçamentos (criação em `DRAFT` para cliente ativo, adição/edição/remoção de itens, recálculo decimal automático com descontos, visualização detalhada em `/orcamentos/[id]`, indicadores refletidos no Dashboard `/` e exclusão restrita a rascunhos).
-4. **Arquitetura, trabalho em equipe e CI/CD:** apresentar a separação `routes → middlewares → controllers/schemas → services → Prisma`, o histórico de branches/PRs e board da equipe, o pipeline `CI` → `Notify central CD` → runner self-hosted e a publicação reversa com Docker Compose e Caddy.
+4. **Pós-serviço:** demonstrar dashboard, garantias e revisões quando houver serviços previamente cadastrados pela API com dados fictícios. Não simular uma tela de serviço ou agenda inexistente.
+5. **Arquitetura, trabalho em equipe e CI/CD:** apresentar a separação `routes → middlewares → controllers/schemas → services → Prisma`, o histórico de branches/PRs e board da equipe, o pipeline `CI` → `Notify central CD` → runner self-hosted e a publicação reversa com Docker Compose e Caddy.
 
 ---
 
-## 14. Limitações atuais e próximas entregas
+## 14. Limitações e evolução pós-MVP
 
-- **Ciclo de decisão na interface:** a expiração manual está disponível pela API. A ação na tela de detalhe e o upload protegido de evidências fazem parte das próximas entregas.
-- **Módulos operacionais e pós-serviço:** serviços, visitas técnicas, agenda do técnico, garantias, revisões e alertas internos estão apenas modelados no banco de dados.
-- **Gestão de senhas:** ainda não há endpoint ou tela para redefinição/alteração de senha após o cadastro do usuário.
-- **Containers em modo de desenvolvimento:** os `Dockerfile`s atuais executam `tsx watch` e `next dev --webpack` com volumes montados, configuração adequada para demonstração acadêmica, mas que requer build de produção antes de uso produtivo real.
+O projeto encerra a entrega acadêmica com o escopo reduzido explicitado na [matriz de entrega final](docs/entrega-final.md). As pendências incluem interface de serviços e visitas, agenda/execução do técnico, expiração e evidências na UI, recuperação de senha, backup e validações completas de qualidade e produção. A OS oficial e o estoque permanecem no software da TechPro. A aplicação não está declarada homologada para uso produtivo definitivo.
 
 ---
 
 ## 15. Documentação complementar
 
+- **[Matriz de entrega final e backlog](docs/entrega-final.md)** — módulos entregues, limitações e evolução pós-MVP.
 - **[Índice central da documentação](docs/README.md)** — mapa completo dos documentos técnicos e de produto.
 - **[Documentação da API](api/README.md)** — arquitetura do backend, autenticação Better Auth, matriz de permissões, contratos completos dos endpoints e regras de cálculo.
 - **[Documentação do Frontend](frontend/README.md)** — estrutura do Next.js App Router, verificação SSR de sessão, componentes, máscaras e integração HTTP.

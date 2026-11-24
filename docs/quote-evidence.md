@@ -56,8 +56,7 @@ anexos de orçamentos em rascunho ou enviados são rejeitados.
 
 ## Provisionamento e segurança
 
-O RustFS compartilhado está no draft PR do repositório privado
-`univates-deadlock/deadlock-deploy`. Na VM, a API utiliza
+A API está integrada pelo PR #114. A infraestrutura compartilhada foi proposta no PR #4 de `univates-deadlock/deadlock-deploy`; a configuração e persistência em produção não foram verificadas nesta revisão. O upload pela interface fica no pós-MVP. Na VM, a API utiliza
 `http://deadlock-rustfs:9000` via `deadlock_edge`, sem Caddy,
 porta pública ou exposição do console.
 

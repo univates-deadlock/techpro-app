@@ -1,8 +1,8 @@
 # Índice da Documentação — TechPro App
 
-Este diretório reúne os artefatos de descoberta, especificação de requisitos e operação do **TechPro App**, servindo como índice central da documentação do repositório na entrega da **Parcial 2**.
+Este diretório reúne os artefatos de descoberta, especificação de requisitos e operação do **TechPro App**, servindo como índice central da documentação do repositório na **entrega final**.
 
-> **Como ler esta documentação:** os documentos de descoberta e requisitos preservam a visão completa do produto planejado (MVP), enquanto os guias técnicos descrevem o que está efetivamente implementado no código da branch `main`. Não utilize o PRD como evidência de funcionalidade concluída sem verificar a matriz abaixo ou o código-fonte.
+> **Como ler esta documentação:** os documentos de descoberta e requisitos preservam a visão completa do produto originalmente planejado, enquanto os guias técnicos descrevem o que está efetivamente implementado no código da branch `main`. Não utilize o PRD como evidência de funcionalidade concluída sem verificar a matriz abaixo ou o código-fonte.
 
 ---
 
@@ -16,26 +16,15 @@ Documentos produzidos nas etapas de levantamento com o cliente e especificação
 
 ---
 
-## 2. Funcionalidades implementadas (estado atual — Parcial 2)
+## 2. Estado da entrega final
 
-Resumo auditado da branch `main`, distinguindo a entrega real do escopo planejado:
+A [matriz de entrega final](entrega-final.md) é a fonte de referência para funcionalidades integradas, cobertura parcial, PRs e pendências pós-MVP. A documentação de requisitos mantém a visão original para preservar a rastreabilidade.
 
-| Categoria | Módulos / recursos | Referência técnica |
-| --- | --- | --- |
-| **Implementada e integrada ao frontend** | Autenticação/sessão (Better Auth + proteção SSR), CRUD de usuários (`/usuarios`), CRUD de clientes (`/clientes`) e CRUD de orçamentos e itens em rascunho/elaboração (`/orcamentos` e `/orcamentos/[id]`). | [`../README.md`](../README.md), [`../api/README.md`](../api/README.md), [`../frontend/README.md`](../frontend/README.md) |
-| **Implementada apenas no backend** | Health check (`GET /api/health`), filtros de query em `GET /api/quotes` (`clientId`, `status`), busca individual por ID em usuários e clientes, rotas `DELETE` lógicas equivalentes a `deactivate` e suíte de testes automatizados da API. | [`../api/README.md`](../api/README.md), [`../api/tests/`](../api/tests/) |
-| **Parcialmente implementada** | Ciclo de decisão de orçamento (envio, aprovação e rejeição na tela de detalhe e expiração manual pela API), Dashboard `/` (indicadores reais de orçamentos para `ADMIN`/`PLANNING` e visão operacional limpa para `TECHNICIAN`, sem serviços/garantias/revisões) e perfil `TECHNICIAN` (páginas restritas ocultas na interface e bloqueadas com `403` na API, aguardando telas próprias de agenda/visitas). | [`../api/README.md`](../api/README.md), [`../frontend/README.md`](../frontend/README.md) |
-| **Apenas modelada no banco de dados** | Tabelas e enums `Service`, `ServiceVisit`, `VisitTechnician`, `Warranty` e `Revision` (telas `/servicos`, `/garantias` e `/revisoes` exibem `DevPage`). | [`../api/prisma/README.md`](../api/prisma/README.md) |
-| **Planejada e ainda não implementada** | Ação de expiração na interface, upload protegido de evidências de orçamento, execução de serviços/visitas e agenda do técnico, garantias, revisões, alertas internos, troca/recuperação de senha, página institucional e módulo opcional de licitações. | [`documento-requisitos.md`](documento-requisitos.md) |
-
-> **Nota sobre contratos e testes:** os antigos arquivos `docs/api-usuarios.md`, `docs/api-clientes.md` e `docs/validacao-demonstracao.md` foram removidos na reorganização documental (PR #38). Todos os contratos HTTP atualizados de usuários, clientes e orçamentos estão consolidados em [`../api/README.md`](../api/README.md). A suíte de testes automatizados da API está implementada em [`../api/tests/`](../api/tests/), dividida em testes unitários ([`client.validation.unit.test.ts`](../api/tests/client.validation.unit.test.ts) e [`quote.calculations.unit.test.ts`](../api/tests/quote.calculations.unit.test.ts)) e de integração ([`client.integration.test.ts`](../api/tests/client.integration.test.ts) e [`quote.integration.test.ts`](../api/tests/quote.integration.test.ts)).
-
----
-
-- **[API de serviços](service-api.md)** — contratos HTTP, regras de vínculo com orçamento e testes críticos.
-- **[Fluxo de decisões de orçamento](quote-workflow.md)** — contrato da interface, pré-condições e teste de integração das ações críticas.
-- **[API de garantias, revisões e alertas](aftercare-api.md)** — contratos, critérios de vencimento, RBAC e testes críticos.
-- **[Evidências de orçamento via S3/RustFS](quote-evidence.md)** — upload autenticado, armazenamento privado, validação e testes críticos.
+- [API de serviços](service-api.md)
+- [Fluxo de decisões de orçamento](quote-workflow.md)
+- [API de garantias, revisões e alertas](aftercare-api.md)
+- [Evidências de orçamento via S3/RustFS](quote-evidence.md)
+- [PR #116 — agendamento de visitas, aguardando integração](https://github.com/univates-deadlock/techpro-app/pull/116)
 
 ---
 
@@ -63,8 +52,6 @@ Guias que detalham a implementação interna e a organização em camadas de cad
 
 ---
 
-## 5. Funcionalidades futuras e fronteiras do sistema
+## 5. Evolução pós-MVP
 
-- **Próximas entregas do MVP:** ação de expiração na interface e upload protegido de evidências de aprovação, abertura e planejamento de serviços (a partir de orçamento aprovado ou diretos), agendamento de visitas e alocação de técnicos, visão operacional do técnico, controle de garantias (serviço vs. fabricante), revisões programadas e alertas no painel operacional.
-- **Opcional do MVP:** acompanhamento manual de licitações (`RF`/escopo adicional descrito na seção 5.2 do PRD).
-- **Fora do MVP:** substituição ou sincronização automática com o sistema externo de estoque/OS oficial da TechPro, disparo automático de mensagens por WhatsApp/e-mail e portal externo para clientes.
+Consulte a [matriz de entrega final e backlog](entrega-final.md), que consolida pendências de interface, API, QA e infraestrutura, além dos itens originalmente fora do escopo.

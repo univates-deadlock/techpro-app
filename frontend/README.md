@@ -8,11 +8,12 @@ Aplicação web interna construída com **Next.js 16 (App Router)**, **React 19*
 
 - **Autenticação (`/login`):** validação local com Zod, bloqueio contra duplo envio, tratamento distinto para credenciais inválidas (`400`/`401`), usuário inativo (`403`), excesso de tentativas (`429`) e indisponibilidade da API, acessibilidade por teclado (`aria-invalid`, `aria-describedby`, `role="alert"`) e layout responsivo (painel institucional lateral a partir de `1024px` e banner compacto em telas menores).
 - **Shell autenticado (`app/(protected)/layout.tsx`):** verificação de sessão ativa no servidor via `requireActiveSession()` antes de renderizar qualquer rota interna, barra lateral responsiva (`AppSidebar`) que filtra itens conforme o perfil da sessão SSR (`Usuários` visível apenas para `ADMIN`; `Clientes`, `Orçamentos`, `Garantias` e `Revisões` visíveis apenas para `ADMIN` e `PLANNING`), proteção SSR por rota via `requireRoleSession()` (redirecionando perfis não autorizados para `/`) e cabeçalho (`AppHeader`) com encerramento de sessão.
-- **Dashboard operacional (`/`):** para `ADMIN` e `PLANNING` (`DashboardQuotesView`), exibe indicadores de orçamentos ("Em aberto", "Aguardando decisão", "Rascunhos" e "Valor em aberto"), lista de orçamentos pendentes e resumo por status calculados no cliente a partir de `GET /api/quotes`; para `TECHNICIAN`, renderiza apenas o painel operacional de serviços/visitas sem consultar `/api/quotes`. Os blocos de serviços/visitas e revisões/garantias exibem avisos estáticos aguardando a entrega desses módulos.
+- **Dashboard operacional (`/`):** indicadores comerciais e operacionais reais (`GET /api/quotes` e `GET /api/dashboard`) para ADMIN/PLANNING; a agenda individual do técnico permanece futura.
 - **Gestão de usuários (`/usuarios`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil (sem alteração de senha) e ativação/desativação em modal acessível (`ADMIN`).
 - **Gestão de clientes (`/clientes`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição com máscaras e validação de dígitos verificadores de CPF/CNPJ e DDD/telefone brasileiro (enviando apenas dígitos para a API) e ativação/inativação (`ADMIN` e `PLANNING`).
 - **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição atômica de observações, desconto geral em `R$` e itens com desconto em `R$` (em `/orcamentos` e `/orcamentos/[id]` enquanto em aberto), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada (`/orcamentos/[id]`) com itens, resumo financeiro discriminando descontos por item e desconto geral em `R$`, e histórico (`ADMIN` e `PLANNING`).
-- **Seções em desenvolvimento (`/servicos`, `/garantias`, `/revisoes`):** renderizam o componente `DevPage` até que os respectivos endpoints sejam implementados na API.
+- **Garantias (`/garantias`) e revisões (`/revisoes`):** listagem, cadastro e edição com API real, seleção de serviço e mudança de status de revisões; acesso ADMIN/PLANNING.
+- **Serviços (`/servicos`):** placeholder `DevPage`; criação e gestão de serviços disponíveis somente via API. Agenda/execução de visitas, anexos de aprovação e expiração na UI ficam no [backlog pós-MVP](../docs/entrega-final.md).
 
 > **Autorização:** ocultar itens de navegação ou botões melhora a experiência de uso, mas o controle de acesso efetivo ocorre no backend (`401`/`403`).
 
@@ -61,11 +62,12 @@ frontend/
 │   ├── login/page.tsx              # Página pública de login
 │   └── (protected)/                # Grupo autenticado protegido por requireActiveSession()
 │       ├── layout.tsx              # Verificação SSR de sessão e montagem do AppShell
-│       ├── page.tsx                # Dashboard operacional (indicadores de orçamentos)
+│       ├── page.tsx                # Dashboard operacional (indicadores comerciais e operacionais)
 │       ├── usuarios/page.tsx       # Tela do CRUD de usuários
 │       ├── clientes/page.tsx       # Tela do CRUD de clientes
 │       ├── orcamentos/             # Listagem/formulário e detalhe (/orcamentos/[id])
-│       └── servicos|garantias|revisoes/  # Placeholders DevPage
+│       ├── garantias/ e revisoes/  # Telas integradas à API
+│       └── servicos/               # Placeholder DevPage
 ├── components/
 │   ├── dashboard/                  # DashboardQuotesView (visão comercial de orçamentos)
 │   ├── layout/                     # AppShell, AppSidebar, AppHeader e DevPage
