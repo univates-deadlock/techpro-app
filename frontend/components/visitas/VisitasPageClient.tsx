@@ -71,6 +71,7 @@ export function VisitasPageClient({
   /** Service preselected via /visitas?serviceId=… (link from the services screen). */
   initialServiceId?: string;
 }) {
+  const [now, setNow] = useState(() => Date.now());
   const [visits, setVisits] = useState<Visit[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
   const [techniciansLoadFailed, setTechniciansLoadFailed] = useState(false);
@@ -105,6 +106,7 @@ export function VisitasPageClient({
         });
         if (!active) return;
         setVisits(data);
+        setNow(Date.now());
       } catch (err) {
         if (active) {
           setError(
@@ -244,7 +246,7 @@ export function VisitasPageClient({
             </p>
           </div>
           <Badge tone={VISIT_TONES[visit.status]}>{VISIT_LABELS[visit.status]}</Badge>
-          {visit.status === "SCHEDULED" && new Date(visit.scheduledStart).getTime() < Date.now() ? <Badge tone="warning">Atrasada</Badge> : null}
+          {visit.status === "SCHEDULED" && new Date(visit.scheduledStart).getTime() < now ? <Badge tone="warning">Atrasada</Badge> : null}
         </div>
 
         <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
@@ -328,7 +330,7 @@ export function VisitasPageClient({
                 {VISIT_EXECUTION_API_ENABLED && visit.status === "SCHEDULED" ? (
                   <Button variant="ghost" disabled={isBusy} onClick={() => setStartConfirm(visit)}>Iniciar execução</Button>
                 ) : null}
-                {VISIT_EXECUTION_API_ENABLED && (visit.status === "IN_PROGRESS" || new Date(visit.scheduledStart).getTime() <= Date.now()) ? (
+                {VISIT_EXECUTION_API_ENABLED && (visit.status === "IN_PROGRESS" || new Date(visit.scheduledStart).getTime() <= now) ? (
                   <Button variant="ghost" disabled={isBusy} onClick={() => setExecutionVisit(visit)}>Registrar conclusão</Button>
                 ) : null}
                 {VISIT_EXECUTION_API_ENABLED ? (

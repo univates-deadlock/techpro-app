@@ -176,11 +176,11 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ---
 
-Os módulos de serviços, visitas, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. A agenda individual do técnico não está disponível. As telas de serviços e planejamento de visitas estão integradas; a listagem de técnicos para PLANNING e a troca de técnicos pelo navegador permanecem limitadas (CORS não permite PUT; ver [contrato de visitas](../docs/visit-api.md)).
+Os módulos de serviços, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. Em visitas, TECHNICIAN consulta somente os registros atribuídos e registra início/conclusão com autorização por vínculo. Planejamento, lista de técnicos ativos, edição de atribuição e cancelamento são exclusivos de ADMIN/PLANNING. Consulte o [contrato de visitas](../docs/visit-api.md).
 
 ## Rotas registradas e contratos HTTP
 
-A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). O planejamento de visitas (`/api/visits` e `/api/services/:id/visits`) está documentado no [contrato de visitas](../docs/visit-api.md); agenda individual e execução técnica ficam no pós-MVP. Consulte a [matriz de entrega](../docs/entrega-final.md).
+A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). O planejamento de visitas (`/api/visits` e `/api/services/:id/visits`) está documentado no [contrato de visitas](../docs/visit-api.md), incluindo agenda individual, execução e cancelamento autorizados. Consulte a [matriz de entrega](../docs/entrega-final.md).
 
 Os testes HTTP automatizados estão em `api/tests/` e usam um PostgreSQL descartável.
 

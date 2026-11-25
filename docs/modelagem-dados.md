@@ -28,8 +28,8 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 | Quote | quote | Orçamento, valores, status, autoria, datas de envio/decisão e referência de evidência; CRUD e decisão integrados. |
 | QuoteItem | quote_item | Itens e valores decimais do orçamento. |
 | Service | service | Atendimento direto ou derivado de orçamento aprovado; referência manual à OS; API e interface integradas. |
-| ServiceVisit | service_visit | Agendamento, período previsto e observações; interface e API integradas para ADMIN/PLANNING. Campos reais de execução existem, mas não são editáveis pela API atual. |
-| VisitTechnician | visit_technician | Relação N:N entre visitas e técnicos; chave primária composta; atribuição por API e seleção inicial na interface para ADMIN; troca pelo navegador e seleção PLANNING pendentes. |
+| ServiceVisit | service_visit | Agendamento, período previsto e observações; interface e API integradas para ADMIN/PLANNING. Início, fim real e status são registrados por endpoints de execução. |
+| VisitTechnician | visit_technician | Relação N:N entre visitas e técnicos; chave primária composta; atribuição e edição pela interface/API de ADMIN/PLANNING; consulta individual do técnico restrita ao vínculo. |
 | Warranty | warranty | Garantia de serviço/fabricante, início e término; API e UI integradas. |
 | Revision | revision | Revisão programada, situação e vínculo opcional com visita; API e UI integradas. |
 
@@ -42,10 +42,10 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 - Garantias utilizam datas sem horário (`@db.Date`); agendamentos e registros de negócio utilizam timestamps. Os alertas são calculados a partir das datas e estados, sem tabela de notificações.
 - Evidências de orçamento são objetos privados no armazenamento S3/RustFS; o banco mantém `decisionEvidenceUrl`. Não existe uma tabela de arquivos ou integração com estoque/OS.
 - A exclusão de orçamento em rascunho tem cascata sobre itens. A remoção de um serviço ou visita possui regras referenciais definidas no schema; não há endpoint de exclusão de serviço/visita na entrega. O vínculo opcional de revisão com visita usa `SetNull`.
-- Status de orçamento, revisão e tipos são enums no banco; status de serviço e visita são strings validadas na camada de aplicação. Campos de início/fim real de visita e transições futuras estão modelados, mas a API atual cria visitas como SCHEDULED e não registra execução.
+- Status de orçamento, revisão e tipos são enums no banco; status de serviço e visita são strings validadas na camada de aplicação. A visita nasce SCHEDULED; a API registra início/fim real e transições autorizadas sem alterar a modelagem.
 
 ## Fluxo disponível e limites
 
 [![Fluxo disponível e limites](../assets/images/prd/fluxo-funcional-entrega.svg)](../assets/images/prd/fluxo-funcional-entrega.svg)
 
-O fluxo descreve os módulos integrados: criação e gestão de serviços e planejamento de visitas estão disponíveis pela interface com API real. A seleção inicial de técnicos funciona para ADMIN; a seleção para PLANNING e a troca de técnicos na edição permanecem limitadas. A agenda individual e a execução técnica não estão operacionais. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos para os limites exatos.
+O fluxo descreve os módulos integrados: criação e gestão de serviços e planejamento de visitas estão disponíveis pela interface com API real. A seleção e edição de técnicos ativos estão disponíveis a ADMIN/PLANNING; técnicos consultam apenas visitas atribuídas e podem registrar início e conclusão. Gestores podem também cancelar visitas ou concluir visitas atrasadas sem inventar um início real. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos para os limites exatos.

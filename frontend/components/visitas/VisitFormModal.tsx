@@ -90,6 +90,7 @@ export function VisitFormModal({
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
+  const [minimumStart] = useState(() => toDatetimeLocal(new Date(Math.ceil(Date.now() / 60000) * 60000).toISOString()));
   const [services, setServices] = useState<SchedulableServiceOption[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
   const [techniciansUnavailable, setTechniciansUnavailable] = useState(false);
@@ -375,7 +376,7 @@ export function VisitFormModal({
             required
             value={form.scheduledStart}
             disabled={isSubmitting}
-            min={visit ? undefined : toDatetimeLocal(new Date(Math.ceil(Date.now() / 60000) * 60000).toISOString())}
+            min={visit ? undefined : minimumStart}
             hint="A previsão do serviço é sugerida automaticamente; ajuste se necessário."
             error={fieldErrors.scheduledStart}
             onChange={(e) => updateField("scheduledStart", e.target.value)}
@@ -439,7 +440,7 @@ export function VisitFormModal({
                   <p className="text-sm text-tp-text-muted">
                     Carregando técnicos…
                   </p>
-                ) : technicians.length === 0 ? (
+                ) : technicians.length === 0 && !visit?.technicians.length ? (
                   <p className="text-sm text-tp-text-muted">
                     Nenhum técnico disponível para atribuição.
                   </p>
@@ -459,7 +460,7 @@ export function VisitFormModal({
                           type="checkbox"
                           className="h-4 w-4 accent-tp-primary"
                           checked={checked}
-                          disabled={isSubmitting || techniciansUnavailable}
+                          disabled={isSubmitting || techniciansUnavailable || (!checked && !technicians.some((active) => active.id === technician.id))}
                           onChange={() => toggleTechnician(technician.id)}
                         />
                         {technician.name}

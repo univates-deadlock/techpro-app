@@ -20,7 +20,7 @@ export const VISIT_STATUS_TRANSITIONS: Record<
   VisitStatusValue,
   readonly VisitStatusValue[]
 > = {
-  SCHEDULED: ["IN_PROGRESS", "CANCELLED"],
+  SCHEDULED: ["IN_PROGRESS", "COMPLETED", "CANCELLED"],
   IN_PROGRESS: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
@@ -342,10 +342,7 @@ export async function cancelVisit(id: string): Promise<Visit> {
   return (await res.json()) as Visit;
 }
 
-/* ==========================================================================
-   Auxiliary data (services list exists on main; the technicians route is
-   part of the remaining work of #72)
-   ========================================================================== */
+/* Auxiliary data for scheduling. */
 
 export type TechnicianOption = { id: string; name: string };
 
