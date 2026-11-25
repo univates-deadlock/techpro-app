@@ -8,7 +8,7 @@ atribuir e desatribuir técnicos, sinalizar conflitos de horário e registrar ex
 
 ## Integração com a interface
 
-A tela `/visitas` usa a API real para consulta, filtros, agendamento, edição, atribuição de técnicos ativos e confirmação de conflitos de horário. Ao selecionar serviço, sugere o período planejado futuro, permitindo ajuste independente para múltiplas visitas. Datas passadas não são aceitas para novos agendamentos ou reagendamentos. A visita não encerra automaticamente o serviço. Consulte o [guia do frontend](../frontend/README.md#integração-com-a-api-serviços-e-visitas).
+Os componentes da tela `/visitas` foram integrados à API nos PRs #120 e #122, mas a rota foi desabilitada por decisão de escopo da entrega acadêmica. A interface de Serviços centraliza as previsões de início/fim. A evolução proposta é uma agenda mensal que reaproveite as APIs, exiba técnicos ativos, serviço e local e permita ajustar o período previsto sem duplicar o planejamento. As regras abaixo permanecem válidas para a API; não representam disponibilidade da tela nesta entrega. Consulte a [matriz de entrega](entrega-final.md).
 
 ## Autorização e rotas
 

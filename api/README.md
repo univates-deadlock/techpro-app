@@ -176,7 +176,7 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ---
 
-Os módulos de serviços, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. Em visitas, TECHNICIAN consulta somente os registros atribuídos e registra início/conclusão com autorização por vínculo. Planejamento, lista de técnicos ativos, edição de atribuição e cancelamento são exclusivos de ADMIN/PLANNING. Consulte o [contrato de visitas](../docs/visit-api.md).
+Os módulos de serviços, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. Em visitas, TECHNICIAN consulta somente os registros atribuídos e registra início/conclusão com autorização por vínculo. Planejamento, lista de técnicos ativos, edição de atribuição e cancelamento são exclusivos de ADMIN/PLANNING. A tela de visitas foi retirada da entrega acadêmica; os endpoints permanecem disponíveis sob as mesmas permissões. Consulte o [contrato de visitas](../docs/visit-api.md).
 
 ## Rotas registradas e contratos HTTP
 

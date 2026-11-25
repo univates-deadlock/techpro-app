@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { ServiceFormModal } from "@/components/servicos/ServiceFormModal";
 import { Alert } from "@/components/ui/Alert";
@@ -311,7 +310,6 @@ export function ServicosPageClient() {
                 <th className="px-4 py-3 font-semibold text-tp-text-main">
                   Período planejado
                 </th>
-                <th className="px-4 py-3 font-semibold text-tp-text-main">Visitas</th>
                 <th className="px-4 py-3 text-right font-semibold text-tp-text-main">
                   Ações
                 </th>
@@ -355,15 +353,6 @@ export function ServicosPageClient() {
                     ) : (
                       "-"
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-tp-text-body">{service._count.visits}</span>
-                    <Link
-                      href={`/visitas?serviceId=${service.id}`}
-                      className="ml-2 text-xs font-semibold text-tp-blue-900 hover:underline"
-                    >
-                      Ver
-                    </Link>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">

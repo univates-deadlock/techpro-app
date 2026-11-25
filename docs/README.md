@@ -26,7 +26,7 @@ A [matriz de entrega final](entrega-final.md) é a fonte de referência para fun
 - [API de garantias, revisões e alertas](aftercare-api.md)
 - [Evidências de orçamento via S3/RustFS](quote-evidence.md)
 - [Contrato da API de visitas](visit-api.md)
-- [Guia das interfaces de serviços e visitas](../frontend/README.md#integração-com-a-api-serviços-e-visitas)
+- [Guia da interface de serviços e da API de visitas](../frontend/README.md#integração-com-a-api-serviços-e-visitas)
 
 ---
 

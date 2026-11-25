@@ -8,13 +8,13 @@ Aplicação web interna construída com **Next.js 16 (App Router)**, **React 19*
 
 - **Autenticação (`/login`):** validação local com Zod, bloqueio contra duplo envio, tratamento distinto para credenciais inválidas (`400`/`401`), usuário inativo (`403`), excesso de tentativas (`429`) e indisponibilidade da API, acessibilidade por teclado (`aria-invalid`, `aria-describedby`, `role="alert"`) e layout responsivo (painel institucional lateral a partir de `1024px` e banner compacto em telas menores).
 - **Shell autenticado (`app/(protected)/layout.tsx`):** verificação de sessão ativa no servidor via `requireActiveSession()` antes de renderizar qualquer rota interna, barra lateral responsiva (`AppSidebar`) que filtra itens conforme o perfil da sessão SSR (`Usuários` visível apenas para `ADMIN`; `Clientes`, `Orçamentos`, `Garantias` e `Revisões` visíveis apenas para `ADMIN` e `PLANNING`), proteção SSR por rota via `requireRoleSession()` (redirecionando perfis não autorizados para `/`) e cabeçalho (`AppHeader`) com encerramento de sessão.
-- **Dashboard operacional (`/`):** indicadores comerciais e operacionais reais (`GET /api/quotes` e `GET /api/dashboard`) para ADMIN/PLANNING; para `TECHNICIAN`, painel operacional com atalho para a agenda de visitas (`/visitas`), restrita às visitas atribuídas.
+- **Dashboard operacional (`/`):** indicadores comerciais e operacionais reais (`GET /api/quotes` e `GET /api/dashboard`) para ADMIN/PLANNING; para `TECHNICIAN`, painel operacional sem atalho para visitas; agenda visual futura.
 - **Gestão de usuários (`/usuarios`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil (sem alteração de senha) e ativação/desativação em modal acessível (`ADMIN`).
 - **Gestão de clientes (`/clientes`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição com máscaras e validação de dígitos verificadores de CPF/CNPJ e DDD/telefone brasileiro (enviando apenas dígitos para a API) e ativação/inativação (`ADMIN` e `PLANNING`).
 - **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição atômica de observações, desconto geral em `R$` e itens com desconto em `R$` (em `/orcamentos` e `/orcamentos/[id]` enquanto em aberto), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada (`/orcamentos/[id]`) com itens, resumo financeiro discriminando descontos por item e desconto geral em `R$`, e histórico (`ADMIN` e `PLANNING`).
 - **Garantias (`/garantias`) e revisões (`/revisoes`):** listagem, cadastro e edição com API real, seleção de serviço e mudança de status de revisões; acesso ADMIN/PLANNING.
 - **Gestão de serviços (`/servicos`):** listagem com filtros (busca por título/OS/cliente, status, origem e período planejado), cadastro a partir de orçamento aprovado ou direto (origem `QUOTE` exige orçamento aprovado e as demais exigem cliente — RN-SRV-01), edição de serviços abertos, referência opcional à OS externa (sempre editável, RN-SRV-02) e transições de status `PLANNED → IN_PROGRESS → COMPLETED` ou `CANCELLED`, espelhando o contrato da API em `main` (`ADMIN` e `PLANNING`); dados via `lib/services-data.ts`.
-- **Agenda de visitas (`/visitas`):** ADMIN/PLANNING consultam, agendam e editam visitas com técnicos ativos, filtros, sugestão das datas do serviço e confirmação de conflitos; datas passadas são recusadas em novos agendamentos e reagendamentos. TECHNICIAN consulta somente as visitas atribuídas. Gestores e técnicos atribuídos registram início/conclusão; gestores cancelam e podem concluir visita atrasada ainda agendada, sem inventar início real. Dados via `lib/visits-data.ts`.
+- **Visitas (`/visitas`):** rota desabilitada na entrega acadêmica (redireciona ADMIN/PLANNING para Serviços e TECHNICIAN para Dashboard). Componentes e clientes HTTP preservados; agenda mensal integrada aos serviços fica no pós-MVP. A navegação e os indicadores exibidos priorizam as datas planejadas de Serviços.
 
 > **Autorização:** ocultar itens de navegação ou botões melhora a experiência de uso, mas o controle de acesso efetivo ocorre no backend (`401`/`403`).
 
@@ -55,7 +55,7 @@ Consulte todos os contratos de rotas, payloads e códigos de status no [README d
 
 ## Integração com a API (serviços e visitas)
 
-As telas de serviços e visitas chamam a API real por clientes HTTP dedicados (`lib/services-data.ts` e `lib/visits-data.ts`, no mesmo padrão de `lib/quotes.ts`) — não há dados fictícios; os técnicos ativos são obtidos do endpoint autorizado de visitas. Estado atual:
+A tela de serviços e os componentes preservados de visitas usam clientes HTTP dedicados (`lib/services-data.ts` e `lib/visits-data.ts`, no mesmo padrão de `lib/quotes.ts`) — não há dados fictícios; os técnicos ativos são obtidos do endpoint autorizado de visitas. Estado atual:
 
 1. **Serviços** — o contrato está na `main` (`api/src/routes/service.route.ts`, PR #112): `GET/POST /api/services`, `PATCH /api/services/:id` e `PATCH /api/services/:id/status`.
 2. **Visitas** — `GET/POST /api/services/:serviceId/visits`, `GET /api/visits` (agenda individual para TECHNICIAN), `GET /api/visits/technicians` (ADMIN/PLANNING), `PATCH /api/visits/:id` (edição atômica de horários e técnicos), `PUT /api/visits/:id/technicians`, `PATCH /api/visits/:id/execution` e `PATCH /api/visits/:id/status` (cancelamento por gestores). Consulte o [contrato](../docs/visit-api.md).
@@ -78,7 +78,7 @@ frontend/
 │       ├── clientes/page.tsx       # Tela do CRUD de clientes
 │       ├── orcamentos/             # Listagem/formulário e detalhe (/orcamentos/[id])
 │       ├── servicos/               # Gestão de serviços (ADMIN e PLANNING)
-│       ├── visitas/                # Agenda de visitas por perfil
+│       ├── visitas/                # Redirecionamento; agenda visual pós-MVP
 │       └── garantias/ e revisoes/  # Telas integradas à API
 ├── components/
 │   ├── dashboard/                  # DashboardQuotesView (visão comercial de orçamentos)
@@ -88,7 +88,7 @@ frontend/
 │   ├── clientes/                   # ClientesPageClient
 │   ├── orcamentos/                 # OrcamentosPageQuote, QuoteFormModal e QuoteDetailPageClient
 │   ├── servicos/                   # ServicosPageClient e ServiceFormModal
-│   ├── visitas/                    # VisitasPageClient, VisitFormModal e VisitExecutionModal
+│   ├── visitas/                    # Componentes preservados, sem rota ativa
 │   └── ui/                         # Alert, Badge, Button, Card, Field, Modal, PageHeader e ícones
 └── lib/                            # auth, quotes, money, masks, schemas, dates e clientes HTTP (services-data, visits-data)
 ```
