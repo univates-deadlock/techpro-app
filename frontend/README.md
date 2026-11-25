@@ -8,12 +8,13 @@ Aplicação web interna construída com **Next.js 16 (App Router)**, **React 19*
 
 - **Autenticação (`/login`):** validação local com Zod, bloqueio contra duplo envio, tratamento distinto para credenciais inválidas (`400`/`401`), usuário inativo (`403`), excesso de tentativas (`429`) e indisponibilidade da API, acessibilidade por teclado (`aria-invalid`, `aria-describedby`, `role="alert"`) e layout responsivo (painel institucional lateral a partir de `1024px` e banner compacto em telas menores).
 - **Shell autenticado (`app/(protected)/layout.tsx`):** verificação de sessão ativa no servidor via `requireActiveSession()` antes de renderizar qualquer rota interna, barra lateral responsiva (`AppSidebar`) que filtra itens conforme o perfil da sessão SSR (`Usuários` visível apenas para `ADMIN`; `Clientes`, `Orçamentos`, `Garantias` e `Revisões` visíveis apenas para `ADMIN` e `PLANNING`), proteção SSR por rota via `requireRoleSession()` (redirecionando perfis não autorizados para `/`) e cabeçalho (`AppHeader`) com encerramento de sessão.
-- **Dashboard operacional (`/`):** indicadores comerciais e operacionais reais (`GET /api/quotes` e `GET /api/dashboard`) para ADMIN/PLANNING; a agenda individual do técnico permanece futura.
+- **Dashboard operacional (`/`):** indicadores comerciais e operacionais reais (`GET /api/quotes` e `GET /api/dashboard`) para ADMIN/PLANNING; para `TECHNICIAN`, painel operacional com atalho para a agenda de visitas (`/visitas`), cuja consulta própria permanece futura.
 - **Gestão de usuários (`/usuarios`):** listagem, cadastro com senha inicial, edição de nome/e-mail/perfil (sem alteração de senha) e ativação/desativação em modal acessível (`ADMIN`).
 - **Gestão de clientes (`/clientes`):** listagem, busca local por nome ou CPF/CNPJ, cadastro e edição com máscaras e validação de dígitos verificadores de CPF/CNPJ e DDD/telefone brasileiro (enviando apenas dígitos para a API) e ativação/inativação (`ADMIN` e `PLANNING`).
 - **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição atômica de observações, desconto geral em `R$` e itens com desconto em `R$` (em `/orcamentos` e `/orcamentos/[id]` enquanto em aberto), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada (`/orcamentos/[id]`) com itens, resumo financeiro discriminando descontos por item e desconto geral em `R$`, e histórico (`ADMIN` e `PLANNING`).
 - **Garantias (`/garantias`) e revisões (`/revisoes`):** listagem, cadastro e edição com API real, seleção de serviço e mudança de status de revisões; acesso ADMIN/PLANNING.
-- **Serviços (`/servicos`):** placeholder `DevPage`; criação e gestão de serviços disponíveis somente via API. Agenda/execução de visitas, anexos de aprovação e expiração na UI ficam no [backlog pós-MVP](../docs/entrega-final.md).
+- **Gestão de serviços (`/servicos`):** listagem com filtros (busca por título/OS/cliente, status, origem e período planejado), cadastro a partir de orçamento aprovado ou direto (origem `QUOTE` exige orçamento aprovado e as demais exigem cliente — RN-SRV-01), edição de serviços abertos, referência opcional à OS externa (sempre editável, RN-SRV-02) e transições de status `PLANNED → IN_PROGRESS → COMPLETED` ou `CANCELLED`, espelhando o contrato da API em `main` (`ADMIN` e `PLANNING`); dados via `lib/services-data.ts`.
+- **Agenda de visitas (`/visitas`):** `ADMIN`/`PLANNING` visualizam a agenda completa por dia, agendam visitas para serviços abertos com um ou mais técnicos (RN-SRV-03), recebem o aviso de conflito de horário com confirmação explícita (`confirmConflicts`), editam horário e texto (técnicos em leitura na edição: o `PUT /api/visits/:id/technicians` é bloqueado no navegador pelo CORS da API até o backend listar o método) e filtram por técnico, status e período. Os fluxos de execução e cancelamento ficam ocultos (`VISIT_EXECUTION_API_ENABLED`) por serem pós-MVP (`docs/entrega-final.md`); a agenda individual do técnico aguarda a API (#74). Dados via `lib/visits-data.ts`.
 
 > **Autorização:** ocultar itens de navegação ou botões melhora a experiência de uso, mas o controle de acesso efetivo ocorre no backend (`401`/`403`).
 
@@ -52,6 +53,16 @@ Consulte todos os contratos de rotas, payloads e códigos de status no [README d
 
 ---
 
+## Integração com a API (serviços e visitas)
+
+As telas de serviços e visitas chamam a API real por clientes HTTP dedicados (`lib/services-data.ts` e `lib/visits-data.ts`, no mesmo padrão de `lib/quotes.ts`) — não há dados fictícios nem camada de fallback. Estado atual:
+
+1. **Serviços** — o contrato está na `main` (`api/src/routes/service.route.ts`, PR #112): `GET/POST /api/services`, `PATCH /api/services/:id` e `PATCH /api/services/:id/status`.
+2. **Visitas** — o contrato está na `main` (`api/src/routes/visit.route.ts`, PR #116): `GET/POST /api/services/:serviceId/visits`, `GET /api/visits` (filtros por serviço, técnico, status e período), `PATCH /api/visits/:id` e `PUT /api/visits/:id/technicians`. O `PUT` é bloqueado no navegador pelo CORS da API (que não lista o método) até correção do backend; por isso os técnicos ficam em leitura na edição. `GET /api/technicians` ainda não existe: `ADMIN` usa o fallback de `GET /api/users` (filtro no cliente) e `PLANNING` vê um aviso de indisponibilidade.
+3. Enquanto uma rota não existe, a tela exibe mensagem genérica (404 → "Serviço indisponível. Contate o administrador."; falha de rede → "Não foi possível falar com o servidor") — nunca detalhes internos como branches ou paths; comportamento aceito em desenvolvimento, e em produção as rotas já devem existir.
+
+---
+
 ## Estrutura de pastas e validação
 
 ```text
@@ -66,8 +77,10 @@ frontend/
 │       ├── usuarios/page.tsx       # Tela do CRUD de usuários
 │       ├── clientes/page.tsx       # Tela do CRUD de clientes
 │       ├── orcamentos/             # Listagem/formulário e detalhe (/orcamentos/[id])
-│       ├── garantias/ e revisoes/  # Telas integradas à API
-│       └── servicos/               # Placeholder DevPage
+│       ├── servicos/               # Gestão de serviços (ADMIN e PLANNING)
+│       ├── visitas/                # Agenda de visitas por perfil
+│       └── garantias/ e revisoes/  # Telas integradas à API
+│       └── garantias|revisoes/     # Placeholders DevPage
 ├── components/
 │   ├── dashboard/                  # DashboardQuotesView (visão comercial de orçamentos)
 │   ├── layout/                     # AppShell, AppSidebar, AppHeader e DevPage
@@ -75,8 +88,10 @@ frontend/
 │   ├── usuarios/                   # UsuariosPageClient
 │   ├── clientes/                   # ClientesPageClient
 │   ├── orcamentos/                 # OrcamentosPageQuote, QuoteFormModal e QuoteDetailPageClient
+│   ├── servicos/                   # ServicosPageClient e ServiceFormModal
+│   ├── visitas/                    # VisitasPageClient, VisitFormModal e VisitExecutionModal
 │   └── ui/                         # Alert, Badge, Button, Card, Field, Modal, PageHeader e ícones
-└── lib/                            # auth-client, auth-server, quotes, money, masks e schemas
+└── lib/                            # auth, quotes, money, masks, schemas, dates e clientes HTTP (services-data, visits-data)
 ```
 
 Para validar lint, tipagem TypeScript e build de produção a partir da raiz do repositório:

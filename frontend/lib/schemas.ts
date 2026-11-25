@@ -323,6 +323,144 @@ export type ApproveQuoteInput = z.infer<typeof approveQuoteSchema>;
 export type RejectQuoteInput = z.infer<typeof rejectQuoteSchema>;
 
 /* ==========================================================================
+   Services — mirrors api/src/schemas/service.schema.ts
+   ========================================================================== */
+
+export const serviceOriginEnum = z.enum(
+  ["QUOTE", "SUPPORT", "MAINTENANCE", "REVISION", "WARRANTY", "OTHER"],
+  { error: "Origem do serviço inválida." },
+);
+
+export const serviceStatusEnum = z.enum(
+  ["PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
+  { error: "Status do serviço inválido." },
+);
+
+export type ServiceOriginInput = z.infer<typeof serviceOriginEnum>;
+export type ServiceStatusInput = z.infer<typeof serviceStatusEnum>;
+
+/** Value of a native `datetime-local` input ("2026-11-20T14:30"). */
+const datetimeLocalSchema = z
+  .string()
+  .trim()
+  .min(1, "Informe a data e a hora.")
+  .refine((value) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value), {
+    message: "Informe uma data e hora válidas.",
+  })
+  .refine((value) => !Number.isNaN(new Date(value).getTime()), {
+    message: "Informe uma data e hora válidas.",
+  });
+
+/** Optional datetime: blank stays blank (the payload converts it to null). */
+const optionalDatetimeLocalSchema = z
+  .string()
+  .trim()
+  .refine((value) => value === "" || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value), {
+    message: "Informe uma data e hora válidas.",
+  })
+  .refine((value) => value === "" || !Number.isNaN(new Date(value).getTime()), {
+    message: "Informe uma data e hora válidas.",
+  });
+
+/**
+ * Service form (create and edit). Mirrors the API rules:
+ * - RN-SRV-01: origin QUOTE requires the approved quote; other origins
+ *   require the client and cannot carry a quote.
+ * - The planned period must not end before it starts.
+ */
+export const serviceSchema = z
+  .object({
+    origin: serviceOriginEnum,
+    quoteId: z.string().trim(),
+    clientId: z.string().trim(),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Informe o título do serviço.")
+      .max(200, "Máximo de 200 caracteres."),
+    description: z.string().trim(),
+    externalOsNumber: z
+      .string()
+      .trim()
+      .max(100, "Número da OS muito longo."),
+    plannedStart: optionalDatetimeLocalSchema,
+    plannedEnd: optionalDatetimeLocalSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (data.origin === "QUOTE" && !data.quoteId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["quoteId"],
+        message: "Selecione o orçamento aprovado.",
+      });
+    }
+    if (data.origin !== "QUOTE" && !data.clientId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["clientId"],
+        message: "Selecione o cliente.",
+      });
+    }
+    if (
+      data.plannedStart &&
+      data.plannedEnd &&
+      new Date(data.plannedEnd).getTime() < new Date(data.plannedStart).getTime()
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["plannedEnd"],
+        message: "O fim planejado deve ser posterior ou igual ao início planejado.",
+      });
+    }
+  });
+
+export type ServiceFormValues = z.infer<typeof serviceSchema>;
+
+/* ==========================================================================
+   Visits — mirrors the proposed contract documented in lib/visits-data.ts;
+   the API must revalidate everything server-side (RNF02)
+   ========================================================================== */
+
+/**
+ * Visit form (schedule and edit). scheduledStart is always required.
+ * technicianIds may be empty: the API accepts a visit without technicians
+ * (they can be assigned later via PUT /api/visits/:id/technicians) and user
+ * ids are Better Auth strings, not necessarily UUIDs — mirroring
+ * api/src/schemas/visit.schema.ts.
+ */
+export const visitSchema = z
+  .object({
+    serviceId: z.string().trim().min(1, "Selecione o serviço."),
+    scheduledStart: datetimeLocalSchema,
+    scheduledEnd: optionalDatetimeLocalSchema,
+    description: z.string().trim(),
+    technicianIds: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "Técnico inválido.")
+          .max(128, "Técnico inválido."),
+      )
+      .max(10, "Uma visita aceita no máximo 10 técnicos."),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.scheduledEnd &&
+      new Date(data.scheduledEnd).getTime() < new Date(data.scheduledStart).getTime()
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["scheduledEnd"],
+        message: "O fim previsto deve ser posterior ou igual ao início.",
+      });
+    }
+  });
+
+export type VisitFormValues = z.infer<typeof visitSchema>;
+
+
+/* ==========================================================================
    Warranties — mirrors api warranty schemas
    ========================================================================== */
 

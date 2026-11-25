@@ -26,15 +26,16 @@ export default async function DashboardPage() {
                 Próximos serviços e visitas
               </h2>
               <Link
-                href="/servicos"
+                href="/visitas"
                 className="text-xs font-semibold text-tp-blue-900 hover:underline"
               >
-                Ir para serviços
+                Ir para minha agenda
               </Link>
             </div>
             <p className="mt-3 text-sm text-tp-text-muted">
-              O módulo de serviços e agenda de visitas ainda está em desenvolvimento.
-              Quando disponível, seus atendimentos agendados e visitas técnicas aparecerão aqui.
+              Sua agenda com as visitas atribuídas a você está disponível em
+              &quot;Minha agenda&quot;. Os indicadores deste painel serão exibidos
+              quando os endpoints de serviços e visitas forem integrados à API.
             </p>
           </Card>
         </div>
