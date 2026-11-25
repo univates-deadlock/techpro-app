@@ -1,6 +1,6 @@
 # API de serviços — fluxo crítico
 
-O PR #112 foi integrado à main. Este contrato descreve a API de serviços; a interface de criação e gestão de serviços permanece pós-MVP. As regras seguem o PRD (RN-SRV-01 / RN-SRV-02).
+Este contrato descreve a API de serviços integrada à interface `/servicos` para ADMIN/PLANNING, com criação direta ou a partir de orçamento aprovado, filtros, edição e transições de status. As regras seguem o PRD (RN-SRV-01 / RN-SRV-02).
 
 ## Autorização e rotas
 

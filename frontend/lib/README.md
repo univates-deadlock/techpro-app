@@ -7,9 +7,12 @@ Módulos compartilhados pelas telas e layouts do frontend:
 - `quotes.ts`: camada de acesso aos endpoints `/api/quotes` (listagem, detalhe, criação, atualização atômica de observações/desconto/itens, sincronização auxiliar de itens via `syncQuoteItems` e exclusão de rascunhos), convertendo `Decimal` serializado pela API em centavos inteiros.
 - `warranties.ts` e `revisions.ts`: clientes HTTP para garantias, revisões e transições de status.
 - `service-options.ts`: lista serviços para os seletores de garantias/revisões.
+- `services-data.ts`: clientes HTTP de serviços, filtros, criação, edição e transições.
+- `visits-data.ts`: clientes HTTP de visitas, conflitos, consulta, agendamento e edição; fallback de listagem de técnicos via usuários para ADMIN, seleção PLANNING pendente e execução desativada.
+- `dates.ts`: utilitários de datas para serviços e visitas.
 - `operational.ts`: cliente de indicadores operacionais do dashboard.
 - `money.ts`: formatação e parsing de valores em reais (sempre baseados em centavos inteiros), quantidades e datas em `pt-BR`.
 - `masks.ts`: máscaras de digitação para CPF, CNPJ e telefone/WhatsApp, além de extração de dígitos para envio à API.
-- `schemas.ts`: schemas Zod espelhados da API para feedback imediato nos formulários de login, usuários, clientes e orçamentos.
+- `schemas.ts`: schemas Zod espelhados da API para feedback imediato nos formulários de login, usuários, clientes, orçamentos, serviços e visitas.
 
 Não importe módulos de `api/src/` no frontend. A validação e a ocultação visual no cliente não substituem a autorização e a validação executadas na API — consulte o [guia do frontend](../README.md) e o [README da API](../../api/README.md).

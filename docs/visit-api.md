@@ -8,6 +8,10 @@ atribuir e desatribuir técnicos e sinalizar conflitos de horário. Início e fi
 reais, mudança de status da visita e agenda do próprio técnico (RF15, RF16) não
 fazem parte deste módulo.
 
+## Integração com a interface
+
+A tela `/visitas` usa a API real para consulta, filtros, agendamento, edição e confirmação de conflitos de horário. ADMIN consegue selecionar técnicos ativos na criação por meio da listagem de usuários; PLANNING não possui acesso a essa listagem e ainda depende de um endpoint específico de técnicos. O endpoint de troca de técnicos está implementado, mas o método PUT não está permitido pelo CORS atual e a interface mantém a atribuição em leitura durante a edição. A tela de agenda individual do técnico existe, porém a consulta retorna 403 e os fluxos de execução/cancelamento estão desativados. Consulte o [guia do frontend](../frontend/README.md#integração-com-a-api-serviços-e-visitas).
+
 ## Autorização e rotas
 
 Todas as rotas de visita exigem sessão ativa com perfil **ADMIN** ou

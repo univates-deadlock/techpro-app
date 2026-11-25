@@ -74,13 +74,13 @@ A referência é o código integrado à main em 25/11/2026; veja a [matriz de en
 | --- | --- |
 | Autenticação, usuários e clientes | Interface e API, sessão e autorização por perfil |
 | Orçamentos | CRUD, itens, cálculo, envio, aprovação, rejeição e exportação PDF; expiração pela API |
-| Serviços | API de gestão, origem direta ou orçamento aprovado, referência à OS externa; UI ainda em desenvolvimento |
+| Serviços | Interface e API de listagem, filtros, criação direta/via orçamento aprovado, edição, referência à OS externa e transições de status (ADMIN/PLANNING) |
 | Garantias e revisões | Listagem, criação e edição integradas à API; status de revisões e alertas |
 | Dashboard | Indicadores reais de orçamentos e pós-serviço para ADMIN/PLANNING |
 | Evidências | API autenticada e armazenamento privado S3; UI de upload e validação de produção futuras |
-| Visitas | API de agendamento, atribuição de técnicos e verificação de conflitos (PR #116); interface, agenda individual e execução técnica pós-MVP |
+| Visitas | Interface e API de consulta, agendamento, edição e conflitos (ADMIN/PLANNING); seleção inicial de técnicos disponível para ADMIN, com limitações para PLANNING; troca de técnicos na edição e agenda/execução individual pós-MVP |
 
-A agenda e a execução pelo técnico, a interface de serviços/visitas e os controles de qualidade e infraestrutura não comprovados foram transferidos para o pós-MVP. Não confundir a presença de modelos no Prisma ou de telas reservadas com funcionalidade entregue.
+As telas de serviços e visitas estão integradas à API. A agenda individual e execução pelo técnico, a edição de técnicos no navegador, a disponibilização do seletor de técnicos para PLANNING e os controles de qualidade e infraestrutura não comprovados permanecem no pós-MVP. Não confundir a presença de modelos no Prisma ou de telas reservadas com funcionalidade entregue.
 
 ---
 
@@ -90,9 +90,9 @@ Toda autorização real é validada no backend a partir da sessão verificada (`
 
 | Perfil | Papel no negócio | Permissões implementadas atualmente |
 | --- | --- | --- |
-| `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços e visitas pela API, garantias, revisões e dashboard. |
-| `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços e visitas pela API, garantias, revisões e dashboard. Recebe `403` em `/api/users` (link "Usuários" oculto na barra lateral). |
-| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/servicos`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` nos módulos de usuários, clientes, orçamentos, serviços, visitas, garantias, revisões, alertas e dashboard. Suas funcionalidades operacionais (agenda e registro de visitas) ficam no backlog pós-MVP. |
+| `ADMIN` | Gestor / Administrador | Acesso administrativo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços, planejamento de visitas, garantias, revisões e dashboard pela interface e API. |
+| `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços, planejamento de visitas, garantias, revisões e dashboard pela interface e API. Recebe `403` em `/api/users` (link "Usuários" oculto); a seleção de técnicos depende de um endpoint próprio ainda não disponível. |
+| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/visitas`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` nos módulos de usuários, clientes, orçamentos, serviços, visitas, garantias, revisões, alertas e dashboard. A tela de agenda individual existe, mas a consulta retorna `403` e as ações de execução estão desativadas; ambas ficam no pós-MVP. |
 
 ---
 
@@ -302,14 +302,14 @@ Para conduzir a apresentação técnica do projeto de forma alinhada ao código 
 1. **Autenticação e controle de sessão:** demonstrar redirecionamento automático para `/login`, tentativa com credencial inválida (`401`), login como `ADMIN`, persistência por cookie HTTP-only e encerramento de sessão (`Sair`).
 2. **Autorização por perfis:** demonstrar a gestão de usuários exclusiva para `ADMIN` (`/usuarios`), o acesso compartilhado de `ADMIN` e `PLANNING` em `/clientes` e `/orcamentos`, o bloqueio no backend (`403`) ao tentar acessar recursos sem permissão e a revogação imediata de sessão ao desativar um usuário.
 3. **CRUDs e regras de negócio:** demonstrar cadastro/edição/inativação lógica de clientes (com máscaras CPF/CNPJ e WhatsApp) e o fluxo de orçamentos (criação em `DRAFT` para cliente ativo, adição/edição/remoção de itens, recálculo decimal automático com descontos, visualização detalhada em `/orcamentos/[id]`, indicadores refletidos no Dashboard `/` e exclusão restrita a rascunhos).
-4. **Pós-serviço:** demonstrar dashboard, garantias e revisões quando houver serviços previamente cadastrados pela API com dados fictícios. Não simular uma tela de serviço ou agenda inexistente.
+4. **Serviços, planejamento e pós-serviço:** como `ADMIN`, demonstrar criação direta ou a partir de orçamento aprovado em `/servicos`, filtros, status e referência à OS; em `/visitas`, agendar visitas, selecionar técnicos e confirmar conflitos quando houver. Demonstrar dashboard, garantias e revisões. Não simular alteração de técnicos em visitas existentes nem agenda individual ou execução do técnico. Utilizar dados fictícios.
 5. **Arquitetura, trabalho em equipe e CI/CD:** apresentar a separação `routes → middlewares → controllers/schemas → services → Prisma`, o histórico de branches/PRs e board da equipe, o pipeline `CI` → `Notify central CD` → runner self-hosted e a publicação reversa com Docker Compose e Caddy.
 
 ---
 
 ## 14. Limitações e evolução pós-MVP
 
-O projeto encerra a entrega acadêmica com o escopo reduzido explicitado na [matriz de entrega final](docs/entrega-final.md). As pendências incluem interface de serviços e visitas, agenda/execução do técnico, expiração e evidências na UI, recuperação de senha, backup e validações completas de qualidade e produção. A OS oficial e o estoque permanecem no software da TechPro. A aplicação não está declarada homologada para uso produtivo definitivo.
+O projeto encerra a entrega acadêmica com o escopo reduzido explicitado na [matriz de entrega final](docs/entrega-final.md). As pendências incluem seleção de técnicos para PLANNING, edição da atribuição pelo navegador, agenda/execução individual do técnico, histórico consolidado, expiração e evidências na UI, recuperação de senha, backup e validações completas de qualidade e produção. A OS oficial e o estoque permanecem no software da TechPro. A aplicação não está declarada homologada para uso produtivo definitivo.
 
 ---
 

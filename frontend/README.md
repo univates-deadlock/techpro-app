@@ -14,7 +14,7 @@ Aplicação web interna construída com **Next.js 16 (App Router)**, **React 19*
 - **Gestão de orçamentos (`/orcamentos` e `/orcamentos/[id]`):** listagem com busca por cliente/código e filtro por status, criação de orçamento em rascunho (`DRAFT`) para clientes ativos, edição atômica de observações, desconto geral em `R$` e itens com desconto em `R$` (em `/orcamentos` e `/orcamentos/[id]` enquanto em aberto), exclusão com confirmação para rascunhos (`DRAFT`) e tela detalhada (`/orcamentos/[id]`) com itens, resumo financeiro discriminando descontos por item e desconto geral em `R$`, e histórico (`ADMIN` e `PLANNING`).
 - **Garantias (`/garantias`) e revisões (`/revisoes`):** listagem, cadastro e edição com API real, seleção de serviço e mudança de status de revisões; acesso ADMIN/PLANNING.
 - **Gestão de serviços (`/servicos`):** listagem com filtros (busca por título/OS/cliente, status, origem e período planejado), cadastro a partir de orçamento aprovado ou direto (origem `QUOTE` exige orçamento aprovado e as demais exigem cliente — RN-SRV-01), edição de serviços abertos, referência opcional à OS externa (sempre editável, RN-SRV-02) e transições de status `PLANNED → IN_PROGRESS → COMPLETED` ou `CANCELLED`, espelhando o contrato da API em `main` (`ADMIN` e `PLANNING`); dados via `lib/services-data.ts`.
-- **Agenda de visitas (`/visitas`):** `ADMIN`/`PLANNING` visualizam a agenda completa por dia, agendam visitas para serviços abertos com um ou mais técnicos (RN-SRV-03), recebem o aviso de conflito de horário com confirmação explícita (`confirmConflicts`), editam horário e texto (técnicos em leitura na edição: o `PUT /api/visits/:id/technicians` é bloqueado no navegador pelo CORS da API até o backend listar o método) e filtram por técnico, status e período. Os fluxos de execução e cancelamento ficam ocultos (`VISIT_EXECUTION_API_ENABLED`) por serem pós-MVP (`docs/entrega-final.md`); a agenda individual do técnico aguarda a API (#74). Dados via `lib/visits-data.ts`.
+- **Agenda de visitas (`/visitas`):** `ADMIN`/`PLANNING` visualizam a agenda completa por dia, agendam visitas para serviços abertos, com seleção inicial de um ou mais técnicos por ADMIN (RN-SRV-03; PLANNING ainda não consegue listar técnicos), recebem o aviso de conflito de horário com confirmação explícita (`confirmConflicts`), editam horário e texto (técnicos em leitura na edição: o `PUT /api/visits/:id/technicians` é bloqueado no navegador pelo CORS da API até o backend listar o método) e filtram por técnico, status e período. Os fluxos de execução e cancelamento ficam ocultos (`VISIT_EXECUTION_API_ENABLED`) por serem pós-MVP ([matriz de entrega](../docs/entrega-final.md)); a agenda individual do técnico aguarda a API (#74). Dados via `lib/visits-data.ts`.
 
 > **Autorização:** ocultar itens de navegação ou botões melhora a experiência de uso, mas o controle de acesso efetivo ocorre no backend (`401`/`403`).
 
@@ -55,11 +55,11 @@ Consulte todos os contratos de rotas, payloads e códigos de status no [README d
 
 ## Integração com a API (serviços e visitas)
 
-As telas de serviços e visitas chamam a API real por clientes HTTP dedicados (`lib/services-data.ts` e `lib/visits-data.ts`, no mesmo padrão de `lib/quotes.ts`) — não há dados fictícios nem camada de fallback. Estado atual:
+As telas de serviços e visitas chamam a API real por clientes HTTP dedicados (`lib/services-data.ts` e `lib/visits-data.ts`, no mesmo padrão de `lib/quotes.ts`) — não há dados fictícios; para listar técnicos, ADMIN usa a listagem real de usuários como alternativa. Estado atual:
 
 1. **Serviços** — o contrato está na `main` (`api/src/routes/service.route.ts`, PR #112): `GET/POST /api/services`, `PATCH /api/services/:id` e `PATCH /api/services/:id/status`.
 2. **Visitas** — o contrato está na `main` (`api/src/routes/visit.route.ts`, PR #116): `GET/POST /api/services/:serviceId/visits`, `GET /api/visits` (filtros por serviço, técnico, status e período), `PATCH /api/visits/:id` e `PUT /api/visits/:id/technicians`. O `PUT` é bloqueado no navegador pelo CORS da API (que não lista o método) até correção do backend; por isso os técnicos ficam em leitura na edição. `GET /api/technicians` ainda não existe: `ADMIN` usa o fallback de `GET /api/users` (filtro no cliente) e `PLANNING` vê um aviso de indisponibilidade.
-3. Enquanto uma rota não existe, a tela exibe mensagem genérica (404 → "Serviço indisponível. Contate o administrador."; falha de rede → "Não foi possível falar com o servidor") — nunca detalhes internos como branches ou paths; comportamento aceito em desenvolvimento, e em produção as rotas já devem existir.
+3. Enquanto uma rota não existe, a tela exibe mensagem genérica (404 → "Serviço indisponível. Contate o administrador."; falha de rede → "Não foi possível falar com o servidor") — nunca detalhes internos como branches ou paths; sem simular dados ou funcionalidades ausentes.
 
 ---
 
@@ -80,7 +80,6 @@ frontend/
 │       ├── servicos/               # Gestão de serviços (ADMIN e PLANNING)
 │       ├── visitas/                # Agenda de visitas por perfil
 │       └── garantias/ e revisoes/  # Telas integradas à API
-│       └── garantias|revisoes/     # Placeholders DevPage
 ├── components/
 │   ├── dashboard/                  # DashboardQuotesView (visão comercial de orçamentos)
 │   ├── layout/                     # AppShell, AppSidebar, AppHeader e DevPage
