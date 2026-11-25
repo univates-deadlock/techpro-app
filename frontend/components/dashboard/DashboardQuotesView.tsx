@@ -212,7 +212,7 @@ export function DashboardQuotesView() {
           <Card className="p-5">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-tp-text-main">
-                Próximos serviços e visitas
+                Próximos serviços
               </h2>
               <Link href="/servicos" className="text-xs font-semibold text-tp-blue-900 hover:underline">
                 Ver serviços
@@ -223,8 +223,7 @@ export function DashboardQuotesView() {
             ) : (
               <>
                 <p className="mb-3 text-sm text-tp-text-body">
-                  <strong>{operations.services.upcoming.count}</strong> serviços e{" "}
-                  <strong>{operations.visits.upcoming.count}</strong> visitas nos próximos{" "}
+                  <strong>{operations.services.upcoming.count}</strong> serviços nos próximos{" "}
                   {operations.window.days} dias.
                 </p>
                 <ul className="space-y-2 text-sm">
@@ -239,7 +238,7 @@ export function DashboardQuotesView() {
                     </li>
                   ))}
                 </ul>
-                {operations.services.upcoming.count === 0 && operations.visits.upcoming.count === 0 ? (
+                {operations.services.upcoming.count === 0 ? (
                   <p className="text-xs text-tp-text-muted">Nenhum atendimento próximo.</p>
                 ) : null}
               </>

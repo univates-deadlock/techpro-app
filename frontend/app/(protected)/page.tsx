@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { DashboardQuotesView } from "@/components/dashboard/DashboardQuotesView";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -23,19 +21,11 @@ export default async function DashboardPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-tp-text-main">
-                Próximos serviços e visitas
+                Agenda operacional
               </h2>
-              <Link
-                href="/visitas"
-                className="text-xs font-semibold text-tp-blue-900 hover:underline"
-              >
-                Ir para minha agenda
-              </Link>
             </div>
             <p className="mt-3 text-sm text-tp-text-muted">
-              Sua agenda com as visitas atribuídas a você está disponível em
-              &quot;Minha agenda&quot;. Os indicadores deste painel serão exibidos
-              quando os endpoints de serviços e visitas forem integrados à API.
+              A agenda de atendimentos não está disponível nesta versão. O planejamento é acompanhado pela equipe responsável pelos serviços.
             </p>
           </Card>
         </div>

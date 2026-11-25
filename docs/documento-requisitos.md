@@ -125,7 +125,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 
 ## 5.3 Evoluções futuras — fora do MVP
 
-Além dos itens originalmente previstos para evolução, permanecem no pós-MVP a expiração e as evidências pela interface (RF09/RF23), o histórico consolidado, a recuperação de senha, o backup (RNF09) e a validação ampliada de QA/produção (incluindo RNF05). Serviços e visitas possuem interface integrada à API, incluindo filtros, agendamento, conflitos, atribuição de técnicos e execução (PRs #112, #116, #120 e #122). Veja a [matriz de rastreabilidade](entrega-final.md).
+Além dos itens originalmente previstos para evolução, permanecem no pós-MVP a agenda visual integrada aos serviços (RF13–RF16), a expiração e as evidências pela interface (RF09/RF23), o histórico consolidado, a recuperação de senha, o backup (RNF09) e a validação ampliada de QA/produção (incluindo RNF05). Serviços possuem interface e API; a API e os componentes de visitas foram desenvolvidos, mas a tela separada foi retirada da entrega final por decisão da equipe, após revisão do fluxo de planejamento. Veja a [matriz de rastreabilidade](entrega-final.md).
 
 - Automação de orçamento, sujeita a reavaliação com o cliente.
 - Pesquisa automática de preços e integração com catálogos/fornecedores. 
@@ -139,9 +139,9 @@ Além dos itens originalmente previstos para evolução, permanecem no pós-MVP 
 ## 5.4 MVP efetivamente entregue
 
 - Autenticação, sessão, perfis, usuários, clientes e orçamentos: interface e API; envio, aprovação, rejeição e PDF; expiração pela API.
-- Serviços e referência à OS externa: interface e API de criação direta/via orçamento aprovado, consulta, filtros, edição e transições. Planejamento de visitas: interface e API de agendamento, reagendamento, filtros e aviso de conflitos; atribuição e edição de técnicos ativos por ADMIN/PLANNING, agenda individual e execução por técnicos atribuídos ou gestores; cancelamento por gestores. A previsão de serviço sugere o período da visita, sem impedir múltiplas visitas; novos agendamentos e reagendamentos no passado são recusados.
+- Serviços e referência à OS externa: interface e API de criação direta/via orçamento aprovado, consulta, filtros, edição, datas previstas e transições. A API de visitas, atribuição e execução permanece integrada ao código; a tela de visitas foi desabilitada na entrega acadêmica. A proposta futura é uma agenda mensal integrada aos serviços, com técnicos cadastrados, cliente/local, período previsto e edição de datas, sem CRUD redundante de visitas.
 - Garantias, revisões, alertas e dashboard de administrador/planejamento: interface e API; evidência de aprovação: API privada, configuração de produção e interface pendentes.
-- Backup, integrações externas e validação ampliada ficam no pós-MVP. A entrega acadêmica não equivale à homologação produtiva.
+- Agenda visual de técnicos, backup, integrações externas e validação ampliada ficam no pós-MVP. A entrega acadêmica não equivale à homologação produtiva.
 
 Veja a [matriz de entrega final](entrega-final.md), os status dos requisitos a seguir e a [modelagem atual](modelagem-dados.md).
 
@@ -151,9 +151,9 @@ Veja a [matriz de entrega final](entrega-final.md), os status dos requisitos a s
 
 | Ator | Contexto | Principais permissões |
 | :---- | :---- | :---- |
-| **Gestor / Administrador** | Responsável com atuação transversal entre comercial, planejamento e execução. | Usuários, clientes, orçamentos, serviços, planejamento de visitas, garantias, revisões e painel pela interface/API; seleção e edição de técnicos ativos, registro de execução e cancelamento. Licitações: pós-MVP. |
-| **Orçamento / Planejamento** | Duas pessoas fixas responsáveis pela parte comercial e planejamento. | Clientes, orçamentos, serviços, planejamento de visitas, referência à OS, garantias, revisões e alertas pela interface/API; seleção e edição de técnicos ativos, registro de execução e cancelamento. Licitações: pós-MVP. |
-| **Técnico** | Duas pessoas fixas de instalação e um técnico variável quando necessário. | Autenticação e acesso ao shell interno; sem acesso comercial. Agenda individual restrita às visitas atribuídas, com início, conclusão e observações de execução. |
+| **Gestor / Administrador** | Responsável com atuação transversal entre comercial, planejamento e execução. | Usuários, clientes, orçamentos, serviços, garantias, revisões e painel pela interface/API. Operações de visitas preservadas na API; agenda visual e licitações: pós-MVP. |
+| **Orçamento / Planejamento** | Duas pessoas fixas responsáveis pela parte comercial e planejamento. | Clientes, orçamentos, serviços, referência à OS, garantias, revisões e alertas pela interface/API. Operações de visitas preservadas na API; agenda visual e licitações: pós-MVP. |
+| **Técnico** | Duas pessoas fixas de instalação e um técnico variável quando necessário. | Autenticação e acesso ao shell interno; sem acesso comercial. Agenda individual retirada da interface; consulta e execução de visitas por vínculo preservadas na API. |
 
 ---
 
@@ -173,16 +173,16 @@ Veja a [matriz de entrega final](entrega-final.md), os status dos requisitos a s
 | **RF10** | O sistema deve permitir criar serviço a partir de orçamento aprovado ou diretamente para um cliente. | Integrado — UI/API |
 | **RF11** | Serviços diretos devem registrar uma origem entre SUPORTE, MANUTENÇÃO, REVISÃO, GARANTIA ou OUTRO. | Integrado — UI/API |
 | **RF12** | Um serviço deve permitir armazenar referência opcional ao número da OS existente no software atual. | Integrado — UI/API |
-| **RF13** | Um serviço deve possuir uma ou mais visitas planejadas, com data/horário, status, local e observações. | Parcial — UI/API de planejamento; local derivado do cliente; serviço pode existir sem visitas |
-| **RF14** | Cada visita deve permitir atribuir um ou mais técnicos. | Integrado — UI/API de atribuição de técnicos ativos para ADMIN/PLANNING |
-| **RF15** | Técnicos devem visualizar sua agenda e os serviços/visitas aos quais estão atribuídos. | Integrado — UI/API com consulta restrita ao técnico autenticado |
-| **RF16** | Técnicos devem poder registrar início/fim real, status e observações gerenciais da visita, sem substituir os dados formais da OS externa. | Integrado — UI/API, registro de início e conclusão com autorização por vínculo |
+| **RF13** | Um serviço deve possuir uma ou mais visitas planejadas, com data/horário, status, local e observações. | Parcial — API de planejamento preservada; interface de visitas retirada; local derivado do cliente |
+| **RF14** | Cada visita deve permitir atribuir um ou mais técnicos. | Parcial — API de atribuição de técnicos ativos preservada; agenda visual pós-MVP |
+| **RF15** | Técnicos devem visualizar sua agenda e os serviços/visitas aos quais estão atribuídos. | Parcial — consulta por vínculo na API; agenda individual na interface pós-MVP |
+| **RF16** | Técnicos devem poder registrar início/fim real, status e observações gerenciais da visita, sem substituir os dados formais da OS externa. | Parcial — execução autorizada na API; interface pós-MVP |
 | **RF17** | Um serviço deve suportar múltiplas garantias, distinguindo garantia de SERVIÇO e de FABRICANTE. | Integrado — UI/API |
 | **RF18** | Garantias devem registrar início, término, descrição e, para fabricante, fabricante e referência opcional ao produto. | Integrado — UI/API |
 | **RF19** | Um serviço deve suportar múltiplas revisões com data prevista e status PENDENTE, AGENDADA, REALIZADA ou CANCELADA. | Integrado — UI/API |
 | **RF20** | O sistema deve exibir alertas internos para revisões próximas/atrasadas e garantias próximas do vencimento. | Integrado — alertas e dashboard ADMIN/PLANNING |
 | **RF21** | O painel operacional deve apresentar ao menos orçamentos pendentes, serviços/visitas próximas, revisões pendentes e garantias próximas do vencimento. | Parcial — dashboard ADMIN/PLANNING; visão técnica futura |
-| **RF22** | O sistema deve permitir busca e filtragem de clientes, orçamentos, serviços e agenda por informações relevantes e status. | Integrado — filtros de clientes, orçamentos, serviços e agenda na UI/API |
+| **RF22** | O sistema deve permitir busca e filtragem de clientes, orçamentos, serviços e agenda por informações relevantes e status. | Parcial — filtros de clientes, orçamentos e serviços na interface; filtros de visitas na API |
 | **RF23** | Quando uma aprovação possuir evidência, o sistema deve permitir anexar arquivo nos formatos e limites definidos nos RNFs. | Parcial — API privada; UI e produção pendentes |
 ---
 
@@ -459,7 +459,7 @@ Foi adotado um modelo relacional. O DER central apresentado abaixo é a modelage
 
 ## 13.2 Fora do MVP
 
-- Todas as pendências do [backlog pós-MVP da entrega final](entrega-final.md), incluindo anexos na UI, backup e homologação.
+- Todas as pendências do [backlog pós-MVP da entrega final](entrega-final.md), incluindo agenda visual, anexos na UI, backup e homologação.
 
 - Automatizar pesquisa de preço.  
 - Descobrir licitações automaticamente.  

@@ -28,8 +28,8 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 | Quote | quote | Orçamento, valores, status, autoria, datas de envio/decisão e referência de evidência; CRUD e decisão integrados. |
 | QuoteItem | quote_item | Itens e valores decimais do orçamento. |
 | Service | service | Atendimento direto ou derivado de orçamento aprovado; referência manual à OS; API e interface integradas. |
-| ServiceVisit | service_visit | Agendamento, período previsto e observações; interface e API integradas para ADMIN/PLANNING. Início, fim real e status são registrados por endpoints de execução. |
-| VisitTechnician | visit_technician | Relação N:N entre visitas e técnicos; chave primária composta; atribuição e edição pela interface/API de ADMIN/PLANNING; consulta individual do técnico restrita ao vínculo. |
+| ServiceVisit | service_visit | Agendamento, período previsto e observações; API integrada; componentes de interface preservados, mas tela retirada da entrega. Início, fim real e status são registrados por endpoints de execução. |
+| VisitTechnician | visit_technician | Relação N:N entre visitas e técnicos; chave primária composta; atribuição e edição pela API de ADMIN/PLANNING; consulta individual do técnico restrita ao vínculo; agenda visual futura. |
 | Warranty | warranty | Garantia de serviço/fabricante, início e término; API e UI integradas. |
 | Revision | revision | Revisão programada, situação e vínculo opcional com visita; API e UI integradas. |
 
@@ -48,4 +48,4 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 
 [![Fluxo disponível e limites](../assets/images/prd/fluxo-funcional-entrega.svg)](../assets/images/prd/fluxo-funcional-entrega.svg)
 
-O fluxo descreve os módulos integrados: criação e gestão de serviços e planejamento de visitas estão disponíveis pela interface com API real. A seleção e edição de técnicos ativos estão disponíveis a ADMIN/PLANNING; técnicos consultam apenas visitas atribuídas e podem registrar início e conclusão. Gestores podem também cancelar visitas ou concluir visitas atrasadas sem inventar um início real. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos para os limites exatos.
+O fluxo distingue os módulos disponíveis na interface daqueles preservados na API. O planejamento de datas previstas ocorre em Serviços; agendamento, atribuição, consulta individual e execução de visitas permanecem implementados na API, sem tela disponível na entrega acadêmica. A evolução proposta é uma agenda mensal integrada aos serviços, sem duplicação do planejamento. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos.

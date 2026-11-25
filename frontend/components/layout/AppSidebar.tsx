@@ -18,7 +18,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Clientes", href: "/clientes", roles: ["ADMIN", "PLANNING"] },
   { label: "Orçamentos", href: "/orcamentos", roles: ["ADMIN", "PLANNING"] },
   { label: "Serviços", href: "/servicos", roles: ["ADMIN", "PLANNING"] },
-  { label: "Visitas", href: "/visitas" },
   { label: "Garantias", href: "/garantias", roles: ["ADMIN", "PLANNING"] },
   { label: "Revisões", href: "/revisoes", roles: ["ADMIN", "PLANNING"] },
   { label: "Usuários", href: "/usuarios", roles: ["ADMIN"] },

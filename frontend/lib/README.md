@@ -8,7 +8,7 @@ Módulos compartilhados pelas telas e layouts do frontend:
 - `warranties.ts` e `revisions.ts`: clientes HTTP para garantias, revisões e transições de status.
 - `service-options.ts`: lista serviços para os seletores de garantias/revisões.
 - `services-data.ts`: clientes HTTP de serviços, filtros, criação, edição e transições.
-- `visits-data.ts`: clientes HTTP de visitas, conflitos, consulta, agendamento e edição; lista de técnicos ativos, edição atômica de atribuição, agenda individual, execução e cancelamento.
+- `visits-data.ts`: clientes HTTP de visitas, conflitos, consulta, agendamento e edição; lista de técnicos ativos, edição atômica de atribuição, consulta individual, execução e cancelamento (clientes preservados; rota de visitas desabilitada na entrega).
 - `dates.ts`: utilitários de datas para serviços e visitas.
 - `operational.ts`: cliente de indicadores operacionais do dashboard.
 - `money.ts`: formatação e parsing de valores em reais (sempre baseados em centavos inteiros), quantidades e datas em `pt-BR`.
