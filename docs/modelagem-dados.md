@@ -4,123 +4,15 @@
 
 ## Diagrama entidade-relacionamento
 
-```mermaid
-erDiagram
-    USER ||--o{ SESSION : autentica
-    USER ||--o{ ACCOUNT : possui
-    USER ||--o{ QUOTE : cria
-    USER o|--o{ QUOTE : envia
-    USER o|--o{ QUOTE : decide
-    USER ||--o{ SERVICE : cria
-    CLIENT ||--o{ QUOTE : solicita
-    CLIENT ||--o{ SERVICE : recebe
-    QUOTE o|--o| SERVICE : origina
-    QUOTE ||--o{ QUOTE_ITEM : contem
-    SERVICE ||--o{ SERVICE_VISIT : planeja
-    SERVICE_VISIT ||--o{ VISIT_TECHNICIAN : atribui
-    USER ||--o{ VISIT_TECHNICIAN : executa
-    SERVICE ||--o{ WARRANTY : possui
-    SERVICE ||--o{ REVISION : programa
-    SERVICE_VISIT o|--o{ REVISION : referencia
+### Autenticação e comercial
 
-    USER {
-        string id PK
-        string email UK
-        string role
-        boolean isActive
-    }
-    SESSION {
-        string id PK
-        string userId FK
-        string token UK
-        datetime expiresAt
-    }
-    ACCOUNT {
-        string id PK
-        string userId FK
-        string providerId
-        string password "hash"
-    }
-    VERIFICATION {
-        string id PK
-        string identifier
-        string value
-        datetime expiresAt
-    }
-    CLIENT {
-        uuid id PK
-        string type
-        string name
-        string document
-        string whatsapp
-        string location
-        string email UK
-        boolean active
-    }
-    QUOTE {
-        uuid id PK
-        uuid clientId FK
-        string createdBy FK
-        string sentBy FK "opcional"
-        string decidedBy FK "opcional"
-        string status
-        decimal subtotal
-        decimal discount
-        decimal total
-        string decisionEvidenceUrl "opcional"
-    }
-    QUOTE_ITEM {
-        uuid id PK
-        uuid quoteId FK
-        string type
-        decimal quantity
-        decimal unitPrice
-        decimal discount
-        decimal subtotal
-    }
-    SERVICE {
-        uuid id PK
-        uuid clientId FK
-        uuid quoteId FK,UK "opcional"
-        string createdBy FK
-        string origin
-        string status
-        string externalOsNumber
-        datetime plannedStart
-        datetime plannedEnd
-        datetime completedAt
-    }
-    SERVICE_VISIT {
-        uuid id PK
-        uuid serviceId FK
-        datetime scheduledStart
-        datetime scheduledEnd
-        datetime actualStart
-        datetime actualEnd
-        string status
-        string notes
-    }
-    VISIT_TECHNICIAN {
-        uuid visitId PK,FK
-        string technicianId PK,FK
-    }
-    WARRANTY {
-        uuid id PK
-        uuid serviceId FK
-        string type
-        date startsAt
-        date endsAt
-        string manufacturer
-        string productReference
-    }
-    REVISION {
-        uuid id PK
-        uuid serviceId FK
-        uuid visitId FK "opcional"
-        datetime scheduledAt
-        string status
-    }
-```
+[![DER de autenticação e comercial](../assets/images/prd/der-autenticacao-comercial.svg)](../assets/images/prd/der-autenticacao-comercial.svg)
+
+### Serviços e pós-serviço
+
+[![DER de serviços e pós-serviço](../assets/images/prd/der-servicos-pos-servico.svg)](../assets/images/prd/der-servicos-pos-servico.svg)
+
+Os diagramas são complementares: USER, CLIENT e QUOTE são repetidos na segunda visão apenas como referência. Clique nas imagens para abrir a versão vetorial em tamanho integral.
 
 O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma contém todos os campos, tipos, valores padrão, índices e mapeamentos físicos. `VERIFICATION` é uma tabela independente do Better Auth, sem chave estrangeira para usuário.
 
@@ -154,20 +46,6 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 
 ## Fluxo disponível e limites
 
-```mermaid
-flowchart LR
-    C["Cliente — UI + API"] --> Q["Orçamento e itens — UI + API"]
-    Q --> D["Envio e decisão — UI + API"]
-    D -->|"Aprovado"| S["Serviço — API"]
-    C -->|"Atendimento direto"| S
-    S --> V["Agendamento e atribuição — API"]
-    S --> G["Garantias — UI + API"]
-    S --> R["Revisões — UI + API"]
-    G --> A["Dashboard e alertas"]
-    R --> A
-    V --> A
-    V -.-> F["Pós-MVP: agenda e execução técnica"]
-    D -.-> E["Evidência — API privada"]
-```
+[![Fluxo disponível e limites](../assets/images/prd/fluxo-funcional-entrega.svg)](../assets/images/prd/fluxo-funcional-entrega.svg)
 
 O fluxo descreve a integração dos módulos, não uma demonstração integral pelo navegador. A criação de serviço e o planejamento de visitas ainda exigem chamadas à API. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos para os limites exatos.
