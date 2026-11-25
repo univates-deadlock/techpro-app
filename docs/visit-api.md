@@ -1,21 +1,18 @@
 # API de visitas — agendamento e técnicos
 
-A API de planejamento de visitas e atribuição de técnicos foi integrada à main pelo PR #116, com CI aprovada. Depende da [API de serviços](service-api.md) (PR #112). Este contrato descreve a implementação integrada, não a homologação de produção. Requisitos relacionados: RF13, RF14, RF22, RN-SRV-03 e RNF06.
+A API de planejamento de visitas e atribuição de técnicos foi integrada à main pelo PR #116, com CI aprovada. Depende da [API de serviços](service-api.md) (PR #112). Este contrato descreve a implementação integrada, não a homologação de produção. Requisitos relacionados: RF13–RF16, RF22, RN-SRV-03 e RNF06.
 
 Uma visita é um agendamento dentro de um serviço, com data/horário e um ou mais
 técnicos. Este módulo cobre o planejamento: criar, editar e consultar visitas,
-atribuir e desatribuir técnicos e sinalizar conflitos de horário. Início e fim
-reais, mudança de status da visita e agenda do próprio técnico (RF15, RF16) não
-fazem parte deste módulo.
+atribuir e desatribuir técnicos, sinalizar conflitos de horário e registrar execução, conclusão ou cancelamento. A agenda individual é restrita ao vínculo com o técnico autenticado.
 
 ## Integração com a interface
 
-A tela `/visitas` usa a API real para consulta, filtros, agendamento, edição e confirmação de conflitos de horário. ADMIN consegue selecionar técnicos ativos na criação por meio da listagem de usuários; PLANNING não possui acesso a essa listagem e ainda depende de um endpoint específico de técnicos. O endpoint de troca de técnicos está implementado, mas o método PUT não está permitido pelo CORS atual e a interface mantém a atribuição em leitura durante a edição. A tela de agenda individual do técnico existe, porém a consulta retorna 403 e os fluxos de execução/cancelamento estão desativados. Consulte o [guia do frontend](../frontend/README.md#integração-com-a-api-serviços-e-visitas).
+A tela `/visitas` usa a API real para consulta, filtros, agendamento, edição, atribuição de técnicos ativos e confirmação de conflitos de horário. Ao selecionar serviço, sugere o período planejado futuro, permitindo ajuste independente para múltiplas visitas. Datas passadas não são aceitas para novos agendamentos ou reagendamentos. A visita não encerra automaticamente o serviço. Consulte o [guia do frontend](../frontend/README.md#integração-com-a-api-serviços-e-visitas).
 
 ## Autorização e rotas
 
-Todas as rotas de visita exigem sessão ativa com perfil **ADMIN** ou
-**PLANNING**. Sem sessão: HTTP 401; TECHNICIAN: HTTP 403.
+Todas as rotas exigem sessão ativa. ADMIN/PLANNING planejam, consultam, editam e cancelam; TECHNICIAN pode listar somente visitas atribuídas (o filtro de técnico é forçado pelo servidor) e registrar sua execução. Demais operações retornam HTTP 403; sem sessão, HTTP 401.
 
 | Método | Rota | Uso |
 | --- | --- | --- |
@@ -23,7 +20,10 @@ Todas as rotas de visita exigem sessão ativa com perfil **ADMIN** ou
 | GET | /api/services/:id/visits | Listar as visitas de um serviço, por início agendado |
 | POST | /api/services/:id/visits | Agendar uma visita, opcionalmente já com técnicos |
 | GET | /api/visits/:id | Detalhar a visita, com serviço, cliente e técnicos |
-| PATCH | /api/visits/:id | Editar ou reagendar a visita |
+| PATCH | /api/visits/:id | Editar/reagendar e substituir técnicos atomicamente |
+| GET | /api/visits/technicians | Listar id e nome de técnicos ativos (ADMIN/PLANNING) |
+| PATCH | /api/visits/:id/execution | Registrar início ou conclusão (gestor ou técnico atribuído) |
+| PATCH | /api/visits/:id/status | Cancelar (ADMIN/PLANNING) |
 | PUT | /api/visits/:id/technicians | Atribuir e desatribuir técnicos (substitui a lista) |
 
 Nas rotas `/api/services/:id/visits`, o `:id` é o do **serviço**. Nas rotas
@@ -45,11 +45,11 @@ Exemplo de agendamento já com técnicos:
 
 | Campo | Obrigatório | Regra |
 | --- | --- | --- |
-| scheduledStart | Sim (na criação) | ISO 8601 com offset |
+| scheduledStart | Sim (na criação) | ISO 8601 com offset; novo agendamento ou reagendamento não pode estar no passado |
 | scheduledEnd | Não | ISO 8601 com offset; pode ser null |
 | description | Não | Texto; pode ser null |
 | notes | Não | Texto; pode ser null |
-| technicianIds | Não (só na criação) | Lista de ids de técnicos; duplicados são unificados; máximo de 10 |
+| technicianIds | Não (criação ou edição) | Lista de ids de técnicos; duplicados são unificados; máximo de 10 |
 | confirmConflicts | Não | true confirma o agendamento mesmo com conflito (ver abaixo) |
 
 Campos desconhecidos são recusados com HTTP 400. Isso inclui status,
@@ -108,7 +108,7 @@ atribuído. Uma lista vazia remove todos.
 
 ## Conflito de horário e regra de confirmação
 
-Um técnico tem **conflito** quando já está em outra visita **não cancelada**
+Um técnico tem **conflito** quando já está em outra visita **agendada ou em execução**
 cujo horário se sobrepõe ao da visita que está sendo planejada.
 
 - Os intervalos são semiabertos: uma visita que começa exatamente quando outra
@@ -116,7 +116,7 @@ cujo horário se sobrepõe ao da visita que está sendo planejada.
 - Visita sem `scheduledEnd` é tratada como tendo 2 horas de duração
   (`DEFAULT_VISIT_DURATION_MS`, em `visit.service.ts`) apenas para esta checagem.
 - A checagem roda ao **criar** uma visita com técnicos, ao **atribuir** técnicos
-  novos (técnicos que já estavam na visita não são checados de novo) e ao
+  novos pelo PUT, ao editar a lista pelo PATCH e ao
   **reagendar** uma visita que já tem técnicos (alterando `scheduledStart` ou
   `scheduledEnd`). Editar só descrição ou observações não dispara a checagem.
 
@@ -168,8 +168,11 @@ desconhecido e UUID inválido retornam HTTP 400.
 
 A visita nasce sempre com status SCHEDULED. Os valores aceitos pela API para
 o status são SCHEDULED, IN_PROGRESS, COMPLETED e CANCELLED. Os requisitos não
-enumeram os status da visita, então esses valores seguem os do serviço; hoje
-apenas SCHEDULED é produzido, e as transições entram com a execução.
+enumeram os status da visita, então esses valores seguem os do serviço.
+
+- `PATCH /api/visits/:id/execution`: body `{"status":"IN_PROGRESS"}` ou `{"status":"COMPLETED","notes":"..."}`. Horários reais são definidos pelo servidor. Técnico atribuído ou gestor pode iniciar visita agendada e concluir visita em execução. Gestor pode concluir visita agendada cujo horário já passou, registrando somente o fim real (início permanece nulo).
+- `PATCH /api/visits/:id/status`: body `{"status":"CANCELLED"}`, apenas ADMIN/PLANNING, para visitas ainda abertas. Concluídas e canceladas são terminais; não ocupam o planejamento de técnicos.
+- Criação e alterações do período para o passado retornam 422; visitas antigas permanecem no histórico e podem ser concluídas ou canceladas.
 
 - Serviço COMPLETED ou CANCELLED não aceita nova visita (HTTP 409).
 - A edição (PATCH) e a troca de técnicos só são permitidas enquanto a visita
@@ -204,8 +207,8 @@ A suíte cobre vínculos, datas e conflitos:
   técnicos ou visitas canceladas, e assumir 2 horas para visitas sem fim.
 - Filtrar visitas por serviço, técnico, status e período, e recusar filtros
   inválidos.
-- Retornar 401/403 para requisições sem sessão ou de técnico, sem alterar o
-  agendamento existente.
+- Retornar 401 sem sessão e 403 para operações gerenciais por técnico ou execução sem vínculo; impedir consulta de visitas de outros técnicos.
+- Recusar agendamento/reagendamento no passado; permitir concluir visita atrasada, registrar execução e cancelar com autorização.
 
 Os testes usam Supertest, Better Auth, Prisma e PostgreSQL descartável
 provisionado pelo global setup da API. **Não** usam banco de produção.
@@ -215,7 +218,4 @@ npm run db:generate --prefix api
 npm run test:integration --prefix api
 ```
 
-Início e fim reais, mudança de status da visita e agenda do técnico ainda não
-têm endpoints nem testes; **não devem ser considerados cobertos** por esta
-suíte. A validação ponta a ponta com orçamento e frontend depende de #64 e
-#70.
+A validação ponta a ponta em navegador e a homologação em produção são verificações separadas da suíte de integração.

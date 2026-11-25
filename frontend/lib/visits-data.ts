@@ -1,32 +1,4 @@
-/**
- * Visit data layer — thin client for the visits API (PR #116).
- *
- * IMPLEMENTED CONTRACT (api/src/routes/visit.route.ts, branch feat/api-visit-scheduling):
- *   GET    /api/services/:serviceId/visits -> Visit[] (ordered by scheduledStart)
- *   GET    /api/visits                     -> Visit[] (query: serviceId, technicianId, status, from, to;
- *                                                ADMIN and PLANNING only — TECHNICIAN gets 403)
- *   POST   /api/services/:serviceId/visits -> 201 Visit (body: scheduledStart, scheduledEnd?,
- *                                                description?, notes?, technicianIds?, confirmConflicts?)
- *   PATCH  /api/visits/:id                 -> Visit    (scheduledStart?, scheduledEnd?, description?,
- *                                                notes?, confirmConflicts? — SCHEDULED visits only)
- *   PUT    /api/visits/:id/technicians     -> Visit    (replaces the whole technician list; body:
- *                                                technicianIds, confirmConflicts?)
- *
- * Technician schedule conflicts are NOT request errors: when a technician already
- * has another non-cancelled visit overlapping the window, the API saves nothing
- * and answers 409 with the conflict list. The client repeats the SAME request
- * with confirmConflicts: true to schedule anyway (see VisitConflictError below).
- *
- * NOT SERVED BY THE API YET (execution is remaining work of issue #72 — the UI
- * must not present these flows as available, per docs/entrega-final.md):
- *   PATCH  /api/visits/:id/execution        (status transition + actualStart/actualEnd — RF16)
- *   PATCH  /api/visits/:id/status           (cancel: SCHEDULED/IN_PROGRESS -> CANCELLED)
- *   GET    /api/technicians                 (active technicians for ADMIN/PLANNING; /api/users
- *                                                is ADMIN-only today, so PLANNING cannot list
- *                                                technicians until this route exists)
- * The functions for these routes stay here behind VISIT_EXECUTION_API_ENABLED /
- * a graceful fallback so they light up when the API team delivers them.
- */
+/** HTTP client for visit planning, technician assignment and execution. */
 import { listServices, type ServiceStatusValue } from "./services-data";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -34,14 +6,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 /** Generic message for routes the API does not serve yet — never expose internal details to users. */
 const ROUTE_MISSING_MESSAGE = "Serviço indisponível. Contate o administrador.";
 
-/**
- * Execution endpoints (real start/end, status transitions, cancellation) are
- * remaining work of issue #72. While false, the visit screens hide the
- * execution and cancellation actions (docs/entrega-final.md: these flows must
- * not be presented as available in the browser). Flip to true once the API
- * serves /api/visits/:id/execution and /api/visits/:id/status.
- */
-export const VISIT_EXECUTION_API_ENABLED = false;
+/** Execution and cancellation are backed by the API. */
+export const VISIT_EXECUTION_API_ENABLED = true;
 
 export type VisitStatusValue =
   | "SCHEDULED"
@@ -54,7 +20,7 @@ export const VISIT_STATUS_TRANSITIONS: Record<
   VisitStatusValue,
   readonly VisitStatusValue[]
 > = {
-  SCHEDULED: ["IN_PROGRESS", "CANCELLED"],
+  SCHEDULED: ["IN_PROGRESS", "COMPLETED", "CANCELLED"],
   IN_PROGRESS: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
@@ -148,6 +114,7 @@ export type VisitEditPayload = {
   scheduledStart?: string;
   scheduledEnd?: string | null;
   description?: string | null;
+  technicianIds?: string[];
   confirmConflicts?: boolean;
 };
 
@@ -299,10 +266,7 @@ export async function updateVisit(
  * the list are unassigned; an empty list removes everyone. Conflicts are
  * checked for the newly added technicians only.
  *
- * NOTE: kept for when the backend fixes the API CORS (api/src/utils/cors.ts
- * does not list the PUT method yet, so browsers block the preflight request
- * for this endpoint). The visit screens do NOT call it until then; technician
- * changes are only possible on visit creation (POST).
+ * This standalone endpoint remains available; the edit form uses atomic PATCH.
  */
 export async function setVisitTechnicians(
   id: string,
@@ -323,7 +287,7 @@ export async function setVisitTechnicians(
   return (await res.json()) as Visit;
 }
 
-/* RF16 — execution endpoints (remaining work of #72, see the header comment). */
+/* RF16 — execution endpoints. */
 
 /** RF16: the technician records the real start; the API stamps IN_PROGRESS. */
 export async function recordVisitStart(id: string): Promise<Visit> {
@@ -334,7 +298,6 @@ export async function recordVisitStart(id: string): Promise<Visit> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: "IN_PROGRESS",
-        actualStart: new Date().toISOString(),
       }),
     },
     "Não foi possível registrar o início da visita.",
@@ -355,8 +318,7 @@ export async function recordVisitCompletion(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: "COMPLETED",
-        actualEnd: new Date().toISOString(),
-        ...(notes ? { notes } : {}),
+        ...(notes !== undefined ? { notes } : {}),
       }),
     },
     "Não foi possível registrar a conclusão da visita.",
@@ -380,50 +342,14 @@ export async function cancelVisit(id: string): Promise<Visit> {
   return (await res.json()) as Visit;
 }
 
-/* ==========================================================================
-   Auxiliary data (services list exists on main; the technicians route is
-   part of the remaining work of #72)
-   ========================================================================== */
+/* Auxiliary data for scheduling. */
 
 export type TechnicianOption = { id: string; name: string };
 
-type ApiUser = { id: string; name: string; role: string; isActive: boolean };
-
-/**
- * GET /api/technicians (remaining work of #72 — /api/users is ADMIN-only today).
- *
- * While the route does not exist, ADMIN sessions fall back to GET /api/users
- * (client-side filter: active technicians only) so scheduling keeps working.
- * PLANNING sessions get 403 there too and see a degraded notice in the UI
- * instead of a broken assignment list — no fake data is ever shown.
- */
+/** Active technicians, returned by the protected planner endpoint. */
 export async function listTechnicians(): Promise<TechnicianOption[]> {
-  try {
-    const res = await request(
-      "/api/technicians",
-      { method: "GET" },
-      "Não foi possível carregar os técnicos.",
-      ROUTE_MISSING_MESSAGE,
-    );
-    const data = (await res.json()) as { id: string; name: string }[];
-    return (Array.isArray(data) ? data : []).map((technician) => ({
-      id: technician.id,
-      name: technician.name,
-    }));
-  } catch {
-    /* Route not served yet: ADMIN can still list users and filter client-side.
-       Any failure here (e.g. PLANNING 403) propagates so the UI shows the
-       degraded notice. */
-    const res = await request(
-      "/api/users",
-      { method: "GET" },
-      "Não foi possível carregar os técnicos.",
-    );
-    const data = (await res.json()) as ApiUser[];
-    return (Array.isArray(data) ? data : [])
-      .filter((user) => user.role === "TECHNICIAN" && user.isActive)
-      .map(({ id, name }) => ({ id, name }));
-  }
+  const res = await request("/api/visits/technicians", { method: "GET" }, "Não foi possível carregar os técnicos.");
+  return (await res.json()) as TechnicianOption[];
 }
 
 export type SchedulableServiceOption = {
@@ -431,6 +357,8 @@ export type SchedulableServiceOption = {
   title: string;
   clientName: string;
   status: ServiceStatusValue;
+  plannedStart: string | null;
+  plannedEnd: string | null;
 };
 
 /** GET /api/services — open services (PLANNED/IN_PROGRESS) can receive visits. */
@@ -448,6 +376,8 @@ export async function listSchedulableServices(): Promise<
       title: service.title,
       clientName: service.client.name,
       status: service.status,
+      plannedStart: service.plannedStart,
+      plannedEnd: service.plannedEnd,
     }))
     .sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
 }

@@ -6,6 +6,8 @@ import {
   setVisitTechniciansSchema,
   updateVisitSchema,
   visitIdSchema,
+  visitExecutionSchema,
+  visitCancelSchema,
 } from "../schemas/visit.schema.js";
 import * as visitService from "../services/visit.service.js";
 import type { VisitConflict } from "../services/visit.service.js";
@@ -22,7 +24,8 @@ const respondWithConflicts = (res: Response, conflicts: VisitConflict[]) =>
 // 1) list All (filters: serviceId, technicianId, status, from, to)
 export const getAllVisits = async (req: Request, res: Response) => {
   const filters = listVisitsQuerySchema.parse(req.query);
-  const visits = await visitService.getAllVisits(filters);
+  const user = res.locals.user;
+  const visits = await visitService.getAllVisits(user.role === "TECHNICIAN" ? { ...filters, technicianId: user.id } : filters);
   return res.json(visits);
 };
 
@@ -77,4 +80,19 @@ export const setVisitTechnicians = async (req: Request, res: Response) => {
   }
 
   return res.json(result.visit);
+};
+
+export const listTechnicians = async (_req: Request, res: Response) => res.json(await visitService.listActiveTechnicians());
+
+export const executeVisit = async (req: Request, res: Response) => {
+  const id = visitIdSchema.parse(req.params.id);
+  const data = visitExecutionSchema.parse(req.body);
+  const user = res.locals.user;
+  return res.json(await visitService.executeVisit(id, data, user.role === "TECHNICIAN" ? user.id : undefined));
+};
+
+export const cancelVisit = async (req: Request, res: Response) => {
+  const id = visitIdSchema.parse(req.params.id);
+  visitCancelSchema.parse(req.body);
+  return res.json(await visitService.cancelVisit(id));
 };

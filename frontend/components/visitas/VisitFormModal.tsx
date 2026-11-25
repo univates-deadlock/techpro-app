@@ -36,10 +36,7 @@ import {
  *
  * Save flow against the API contract (PR #116, merged to main):
  * - create: POST /api/services/:id/visits (horário + técnicos in one request);
- * - edit: PATCH /api/visits/:id with only the changed time/text fields.
- *   Technicians are read-only on edit: the API's technician-list endpoint
- *   (PUT /api/visits/:id/technicians) is not callable from browsers until the
- *   API CORS lists the PUT method.
+ * - edit: PATCH /api/visits/:id updates changed schedule, text and assignments atomically.
  *
  * When the API answers 409 with a conflict list nothing is saved; the form
  * shows the conflicts and repeats the SAME request with confirmConflicts
@@ -93,11 +90,9 @@ export function VisitFormModal({
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
+  const [minimumStart] = useState(() => toDatetimeLocal(new Date(Math.ceil(Date.now() / 60000) * 60000).toISOString()));
   const [services, setServices] = useState<SchedulableServiceOption[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
-  /* The /api/technicians route is remaining backend work (#72): until it
-     exists PLANNING cannot list technicians and the assignment block shows
-     a notice instead of an empty list pretending to be complete. */
   const [techniciansUnavailable, setTechniciansUnavailable] = useState(false);
   const [isLoadingAux, setIsLoadingAux] = useState(true);
   /* The parent mounts this component only while the modal is open, so the
@@ -133,6 +128,14 @@ export function VisitFormModal({
       if (!active) return;
       if (servicesResult.status === "fulfilled") {
         setServices(servicesResult.value);
+        if (!visit && defaultServiceId) {
+          const selected = servicesResult.value.find((item) => item.id === defaultServiceId);
+          if (selected) setForm((current) => current.serviceId === defaultServiceId && !current.scheduledStart ? {
+            ...current,
+            scheduledStart: selected.plannedStart && new Date(selected.plannedStart).getTime() >= Date.now() ? toDatetimeLocal(selected.plannedStart) : "",
+            scheduledEnd: selected.plannedStart && new Date(selected.plannedStart).getTime() >= Date.now() ? toDatetimeLocal(selected.plannedEnd) : "",
+          } : current);
+        }
       } else {
         setFormError(
           servicesResult.reason instanceof Error
@@ -150,7 +153,7 @@ export function VisitFormModal({
     return () => {
       active = false;
     };
-  }, []);
+  }, [defaultServiceId, visit]);
 
   function updateField<K extends keyof VisitFormState>(
     key: K,
@@ -200,6 +203,11 @@ export function VisitFormModal({
       return;
     }
 
+    const startChanged = !visit || form.scheduledStart !== toDatetimeLocal(visit.scheduledStart) || form.scheduledEnd !== toDatetimeLocal(visit.scheduledEnd);
+    if (startChanged && new Date(form.scheduledStart).getTime() < Date.now()) {
+      setFieldErrors({ scheduledStart: "Não é possível agendar uma visita no passado." });
+      return;
+    }
     setFieldErrors({});
     setIsSubmitting(true);
 
@@ -216,16 +224,12 @@ export function VisitFormModal({
            schema is a strictObject and rejects unknown fields). */
         const patch: Record<string, unknown> = {};
         if (
-          new Date(basePayload.scheduledStart).getTime() !==
-          new Date(current.scheduledStart).getTime()
+          form.scheduledStart !== toDatetimeLocal(current.scheduledStart)
         ) {
           patch.scheduledStart = basePayload.scheduledStart;
         }
         if (
-          (basePayload.scheduledEnd ?? null) !==
-          (current.scheduledEnd
-            ? new Date(current.scheduledEnd).toISOString()
-            : null)
+          form.scheduledEnd !== toDatetimeLocal(current.scheduledEnd)
         ) {
           patch.scheduledEnd = basePayload.scheduledEnd;
         }
@@ -233,11 +237,9 @@ export function VisitFormModal({
           patch.description = basePayload.description;
         }
 
-        /* Technicians are only set on creation (POST): the API's
-           PUT /api/visits/:id/technicians exists, but the API CORS does not
-           list the PUT method yet, so browsers cannot call it. Until the
-           backend adds "PUT" to the CORS methods, the edit screen is
-           time/text only and shows the assigned technicians read-only. */
+        if (!techniciansUnavailable && [...form.technicianIds].sort().join(",") !== current.technicians.map((link) => link.technician.id).sort().join(",")) {
+          patch.technicianIds = form.technicianIds;
+        }
         if (Object.keys(patch).length === 0) {
           onSaved("Nenhuma alteração para salvar.");
           return;
@@ -337,7 +339,16 @@ export function VisitFormModal({
                 id="visit-service"
                 value={form.serviceId}
                 disabled={isSubmitting || isLoadingAux}
-                onChange={(e) => updateField("serviceId", e.target.value)}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  const selected = services.find((item) => item.id === id);
+                  const future = selected?.plannedStart && new Date(selected.plannedStart).getTime() >= Date.now();
+                  setForm((current) => ({ ...current, serviceId: id,
+                    scheduledStart: future ? toDatetimeLocal(selected?.plannedStart) : "",
+                    scheduledEnd: future ? toDatetimeLocal(selected?.plannedEnd) : "",
+                  }));
+                  setFieldErrors({});
+                }}
                 className={SELECT_CLASSES}
               >
                 <option value="">Selecione um serviço aberto…</option>
@@ -365,6 +376,8 @@ export function VisitFormModal({
             required
             value={form.scheduledStart}
             disabled={isSubmitting}
+            min={visit ? undefined : minimumStart}
+            hint="A previsão do serviço é sugerida automaticamente; ajuste se necessário."
             error={fieldErrors.scheduledStart}
             onChange={(e) => updateField("scheduledStart", e.target.value)}
           />
@@ -396,10 +409,7 @@ export function VisitFormModal({
           />
         </div>
 
-        {/* Técnicos (RN-SRV-03). On creation they are chosen in this form
-            (POST accepts technicianIds); on edit they are read-only because
-            the API's technician list endpoint (PUT) is not callable from
-            browsers until the API CORS lists the PUT method. */}
+        {/* Técnicos ativos (RN-SRV-03). */}
         <div className="mt-4 flex flex-col gap-1.5">
           <span
             id="visit-technicians-label"
@@ -407,33 +417,6 @@ export function VisitFormModal({
           >
             Técnicos atribuídos
           </span>
-          {visit ? (
-            <>
-              <p className="text-sm text-tp-text-muted">
-                Os técnicos são definidos no agendamento.
-              </p>
-              <div
-                role="group"
-                aria-labelledby="visit-technicians-label"
-                className="flex flex-wrap gap-2"
-              >
-                {visit.technicians.length === 0 ? (
-                  <p className="text-sm text-tp-text-muted">
-                    Nenhum técnico atribuído a esta visita.
-                  </p>
-                ) : (
-                  visit.technicians.map((link) => (
-                    <span
-                      key={link.technician.id}
-                      className="rounded-tp-sm border border-tp-border bg-tp-neutral-50 px-3 py-2 text-sm text-tp-text-main"
-                    >
-                      {link.technician.name}
-                    </span>
-                  ))
-                )}
-              </div>
-            </>
-          ) : (
             <>
               {fieldErrors.technicianIds ? (
                 <p className="text-sm text-tp-danger">
@@ -441,8 +424,7 @@ export function VisitFormModal({
                 </p>
               ) : techniciansUnavailable ? (
                 <p className="text-sm text-tp-text-muted">
-                  Não foi possível listar os técnicos para o seu perfil. A
-                  visita pode ser salva sem técnicos e atribuída depois.
+                  Não foi possível carregar os técnicos. A atribuição existente será preservada.
                 </p>
               ) : (
                 <p className="text-sm text-tp-text-muted">
@@ -458,12 +440,12 @@ export function VisitFormModal({
                   <p className="text-sm text-tp-text-muted">
                     Carregando técnicos…
                   </p>
-                ) : technicians.length === 0 ? (
+                ) : technicians.length === 0 && !visit?.technicians.length ? (
                   <p className="text-sm text-tp-text-muted">
                     Nenhum técnico disponível para atribuição.
                   </p>
                 ) : (
-                  technicians.map((technician) => {
+                  [...technicians, ...(visit?.technicians.map((link) => link.technician).filter((item) => !technicians.some((active) => active.id === item.id)) ?? [])].map((technician) => {
                     const checked = form.technicianIds.includes(technician.id);
                     return (
                       <label
@@ -478,7 +460,7 @@ export function VisitFormModal({
                           type="checkbox"
                           className="h-4 w-4 accent-tp-primary"
                           checked={checked}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || techniciansUnavailable || (!checked && !technicians.some((active) => active.id === technician.id))}
                           onChange={() => toggleTechnician(technician.id)}
                         />
                         {technician.name}
@@ -488,7 +470,6 @@ export function VisitFormModal({
                 )}
               </div>
             </>
-          )}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">

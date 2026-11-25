@@ -69,7 +69,7 @@ export const createVisitSchema = z
   .superRefine(validateSchedule);
 
 export const updateVisitSchema = z
-  .strictObject({ ...editableFields, confirmConflicts })
+  .strictObject({ ...editableFields, technicianIds: technicianIdsSchema.optional(), confirmConflicts })
   .partial()
   // confirmConflicts alone changes nothing, so it doesn't count as a field to update.
   .refine((data) => Object.keys(data).some((key) => key !== "confirmConflicts"), {
@@ -101,3 +101,10 @@ export type CreateVisitInput = z.infer<typeof createVisitSchema>;
 export type UpdateVisitInput = z.infer<typeof updateVisitSchema>;
 export type SetVisitTechniciansInput = z.infer<typeof setVisitTechniciansSchema>;
 export type ListVisitsQuery = z.infer<typeof listVisitsQuerySchema>;
+
+export const visitExecutionSchema = z.strictObject({
+  status: z.enum(["IN_PROGRESS", "COMPLETED"]),
+  notes: z.string().trim().nullable().optional(),
+});
+export const visitCancelSchema = z.strictObject({ status: z.literal("CANCELLED") });
+export type VisitExecutionInput = z.infer<typeof visitExecutionSchema>;

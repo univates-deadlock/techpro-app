@@ -71,11 +71,9 @@ export function VisitasPageClient({
   /** Service preselected via /visitas?serviceId=… (link from the services screen). */
   initialServiceId?: string;
 }) {
+  const [now, setNow] = useState(() => Date.now());
   const [visits, setVisits] = useState<Visit[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
-  /* /api/technicians is remaining backend work (#72): PLANNING cannot list
-     technicians until it exists, so the filter shows a notice instead of an
-     empty list pretending to be complete. */
   const [techniciansLoadFailed, setTechniciansLoadFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -108,6 +106,7 @@ export function VisitasPageClient({
         });
         if (!active) return;
         setVisits(data);
+        setNow(Date.now());
       } catch (err) {
         if (active) {
           setError(
@@ -247,6 +246,7 @@ export function VisitasPageClient({
             </p>
           </div>
           <Badge tone={VISIT_TONES[visit.status]}>{VISIT_LABELS[visit.status]}</Badge>
+          {visit.status === "SCHEDULED" && new Date(visit.scheduledStart).getTime() < now ? <Badge tone="warning">Atrasada</Badge> : null}
         </div>
 
         <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
@@ -264,7 +264,7 @@ export function VisitasPageClient({
                 ? visit.technicians
                     .map((link) => link.technician.name)
                     .join(", ")
-                : "—"}
+                : "Nenhum técnico atribuído"}
             </dd>
           </div>
           {visit.actualStart ? (
@@ -290,9 +290,6 @@ export function VisitasPageClient({
 
         <div className="mt-3 flex flex-wrap gap-2">
           {user.role === "TECHNICIAN" ? (
-            /* Execution endpoints are remaining backend work (#72) and must
-               not be presented as available in the browser
-               (docs/entrega-final.md). */
             VISIT_EXECUTION_API_ENABLED ? (
               <>
                 {visit.status === "SCHEDULED" ? (
@@ -318,7 +315,7 @@ export function VisitasPageClient({
           ) : (
             isOpen && (
               <>
-                <Button
+                {visit.status === "SCHEDULED" ? <Button
                   variant="ghost"
                   disabled={isBusy}
                   onClick={() => {
@@ -328,9 +325,14 @@ export function VisitasPageClient({
                   }}
                 >
                   Editar
-                </Button>
-                {/* Cancellation is also an execution endpoint (status
-                    transition) and stays hidden until the API serves it. */}
+                </Button> : null}
+
+                {VISIT_EXECUTION_API_ENABLED && visit.status === "SCHEDULED" ? (
+                  <Button variant="ghost" disabled={isBusy} onClick={() => setStartConfirm(visit)}>Iniciar execução</Button>
+                ) : null}
+                {VISIT_EXECUTION_API_ENABLED && (visit.status === "IN_PROGRESS" || new Date(visit.scheduledStart).getTime() <= now) ? (
+                  <Button variant="ghost" disabled={isBusy} onClick={() => setExecutionVisit(visit)}>Registrar conclusão</Button>
+                ) : null}
                 {VISIT_EXECUTION_API_ENABLED ? (
                   <Button
                     variant="ghost"

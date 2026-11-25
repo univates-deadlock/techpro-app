@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 const cors_options = {
     origin: env.FE_BASE_URL,
     credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ['Content-Type', 'Authorization'],
     optionsSuccessStatus: 204
 };

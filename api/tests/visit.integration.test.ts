@@ -13,15 +13,10 @@ describe("Critical visit scheduling workflows", () => {
   let technician2: { id: string };
   let clientId: string;
 
-  // 2026-12-01T09:00-03:00 → 12:00Z (same instant as at(12)).
-  const visitPayload = {
-    scheduledStart: "2026-12-01T09:00:00-03:00",
-    scheduledEnd: "2026-12-01T12:00:00-03:00",
-    description: "Instalação do evaporador",
-  };
-
-  // UTC instant on December 2026, to keep time windows easy to read in the tests.
-  const at = (hour: number, day = 1) => new Date(Date.UTC(2026, 11, day, hour)).toISOString();
+  // Relative dates keep scheduling tests valid after the delivery date.
+  const today = new Date();
+  const at = (hour: number, day = 1) => new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, day, hour)).toISOString();
+  const visitPayload = { scheduledStart: at(12), scheduledEnd: at(15), description: "Instalação do evaporador" };
 
   const technicianIdsOf = (body: { technicians: { technician: { id: string } }[] }) =>
     body.technicians.map((item) => item.technician.id).sort();
@@ -116,7 +111,7 @@ describe("Critical visit scheduling workflows", () => {
     // A visit scheduled earlier must come first in the list.
     await agentWithCookie(admin.cookie)
       .post(servicePath)
-      .send({ scheduledStart: "2026-11-30T08:00:00-03:00" })
+      .send({ scheduledStart: at(11) })
       .expect(201);
     const list = await agentWithCookie(admin.cookie).get(servicePath).expect(200);
     expect(list.body).toHaveLength(2);
@@ -131,8 +126,8 @@ describe("Critical visit scheduling workflows", () => {
     const rescheduled = await planner()
       .patch("/api/visits/" + visitId)
       .send({
-        scheduledStart: "2026-12-02T09:00:00-03:00",
-        scheduledEnd: "2026-12-02T11:00:00-03:00",
+        scheduledStart: at(12, 2),
+        scheduledEnd: at(14, 2),
       })
       .expect(200);
     expect(new Date(rescheduled.body.scheduledStart as string).toISOString()).toBe(at(12, 2));
@@ -146,8 +141,8 @@ describe("Critical visit scheduling workflows", () => {
     const endBeforeStart = await agentWithCookie(admin.cookie)
       .post(servicePath)
       .send({
-        scheduledStart: "2026-12-01T12:00:00-03:00",
-        scheduledEnd: "2026-12-01T09:00:00-03:00",
+        scheduledStart: at(15),
+        scheduledEnd: at(12),
       })
       .expect(400);
     expect(endBeforeStart.body.fields).toEqual(
@@ -478,6 +473,39 @@ describe("Critical visit scheduling workflows", () => {
     await planner().get("/api/visits").query({ serviceId: "not-a-uuid" }).expect(400);
   });
 
+  it("rejects new and rescheduled past visits but allows closing overdue visits", async () => {
+    const service = await createService();
+    const past = new Date(Date.now() - 86400000).toISOString();
+    await planner().post("/api/services/" + service.id + "/visits").send({ scheduledStart: past }).expect(422);
+    const scheduled = await createVisit(service.id);
+    await planner().patch("/api/visits/" + scheduled.id).send({ scheduledStart: past }).expect(422);
+    const overdue = await createVisit(service.id, { start: past, end: null });
+    const closed = await planner().patch("/api/visits/" + overdue.id + "/execution").send({ status: "COMPLETED", notes: "Concluída" }).expect(200);
+    expect(closed.body).toMatchObject({ status: "COMPLETED", actualStart: null, notes: "Concluída" });
+    expect(closed.body.actualEnd).toBeTruthy();
+    await planner().patch("/api/visits/" + overdue.id + "/execution").send({ status: "IN_PROGRESS" }).expect(409);
+  });
+
+  it("lists active technicians and restricts execution to assigned technicians or planners", async () => {
+    const options = await planner().get("/api/visits/technicians").expect(200);
+    expect(options.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: technician.id })]));
+    expect(options.body.every((item: Record<string, unknown>) => Object.keys(item).sort().join(",") === "id,name")).toBe(true);
+    const service = await createService();
+    const visit = await createVisit(service.id);
+    const path = "/api/visits/" + visit.id;
+    const tech = agentWithCookie(technician.cookie);
+    await tech.patch(path + "/execution").send({ status: "IN_PROGRESS" }).expect(403);
+    await planner().patch(path).send({ technicianIds: [technician.id] }).expect(200);
+    expect(idsOf((await tech.get("/api/visits").query({ technicianId: technician2.id }).expect(200)).body)).toEqual([visit.id]);
+    await tech.patch(path + "/execution").send({ status: "IN_PROGRESS" }).expect(200);
+    const closed = await tech.patch(path + "/execution").send({ status: "COMPLETED" }).expect(200);
+    expect(closed.body.actualStart).toBeTruthy();
+    expect(closed.body.actualEnd).toBeTruthy();
+    await tech.patch(path + "/status").send({ status: "CANCELLED" }).expect(403);
+    const second = await createVisit(service.id);
+    await planner().patch("/api/visits/" + second.id + "/status").send({ status: "CANCELLED" }).expect(200);
+  });
+
   it("protects visit data from anonymous and technician requests", async () => {
     const service = await createService();
     const visit = await createVisit(service.id);
@@ -493,7 +521,7 @@ describe("Critical visit scheduling workflows", () => {
     await request(app).put(techniciansPath).send({ technicianIds: [technician.id] }).expect(401);
 
     const tech = agentWithCookie(technician.cookie);
-    await tech.get("/api/visits").expect(403);
+    expect((await tech.get("/api/visits").expect(200)).body).toEqual([]);
     await tech.get(servicePath).expect(403);
     await tech.post(servicePath).send(visitPayload).expect(403);
     await tech.get(visitPath).expect(403);
