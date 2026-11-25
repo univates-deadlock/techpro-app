@@ -27,9 +27,9 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 | Client | client | Identificação PF/PJ, contatos e localização; CRUD e inativação pela API/UI. |
 | Quote | quote | Orçamento, valores, status, autoria, datas de envio/decisão e referência de evidência; CRUD e decisão integrados. |
 | QuoteItem | quote_item | Itens e valores decimais do orçamento. |
-| Service | service | Atendimento direto ou derivado de orçamento aprovado; referência manual à OS; API integrada, UI futura. |
-| ServiceVisit | service_visit | Agendamento, período previsto e observações; API integrada. Campos reais de execução existem, mas não são editáveis pela API atual. |
-| VisitTechnician | visit_technician | Relação N:N entre visitas e técnicos; chave primária composta; atribuição por API. |
+| Service | service | Atendimento direto ou derivado de orçamento aprovado; referência manual à OS; API e interface integradas. |
+| ServiceVisit | service_visit | Agendamento, período previsto e observações; interface e API integradas para ADMIN/PLANNING. Campos reais de execução existem, mas não são editáveis pela API atual. |
+| VisitTechnician | visit_technician | Relação N:N entre visitas e técnicos; chave primária composta; atribuição por API e seleção inicial na interface para ADMIN; troca pelo navegador e seleção PLANNING pendentes. |
 | Warranty | warranty | Garantia de serviço/fabricante, início e término; API e UI integradas. |
 | Revision | revision | Revisão programada, situação e vínculo opcional com visita; API e UI integradas. |
 
@@ -48,4 +48,4 @@ O DER mostra campos selecionados, chaves e cardinalidades; o schema Prisma cont�
 
 [![Fluxo disponível e limites](../assets/images/prd/fluxo-funcional-entrega.svg)](../assets/images/prd/fluxo-funcional-entrega.svg)
 
-O fluxo descreve a integração dos módulos, não uma demonstração integral pelo navegador. A criação de serviço e o planejamento de visitas ainda exigem chamadas à API. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos para os limites exatos.
+O fluxo descreve os módulos integrados: criação e gestão de serviços e planejamento de visitas estão disponíveis pela interface com API real. A seleção inicial de técnicos funciona para ADMIN; a seleção para PLANNING e a troca de técnicos na edição permanecem limitadas. A agenda individual e a execução técnica não estão operacionais. Consulte a [matriz de entrega](entrega-final.md), o [PRD](documento-requisitos.md) e os contratos técnicos para os limites exatos.

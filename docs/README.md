@@ -11,7 +11,7 @@ Este diretório reúne os artefatos de descoberta, especificação de requisitos
 Documentos produzidos nas etapas de levantamento com o cliente e especificação do sistema:
 
 - **[Documento de Requisitos (PRD)](documento-requisitos.md)** — problema de negócio, escopo do MVP, atores, requisitos funcionais (`RF01`–`RF23`) e não funcionais (`RNF01`–`RNF15`), histórias de usuário, casos de uso, diagrama entidade-relacionamento e glossário.
-- **[Modelagem de dados](modelagem-dados.md)** — DER atualizado, dicionário de entidades, restrições e fluxo implementado, com referência ao schema e migrations.
+- **[Modelagem de dados](modelagem-dados.md)** — DER complementar ao oficial, dicionário de entidades, restrições e fluxo implementado, com referência ao schema e migrations.
 - **[Contexto do cliente](contexto-cliente.md)** — levantamento prévio sobre a atuação, serviços, público e presença institucional da TechPro (Sprint 0).
 - **[Perguntas ao cliente](perguntas-cliente.md)** — roteiro utilizado na entrevista de descoberta para mapear gargalos operacionais e prioridades.
 
@@ -26,7 +26,7 @@ A [matriz de entrega final](entrega-final.md) é a fonte de referência para fun
 - [API de garantias, revisões e alertas](aftercare-api.md)
 - [Evidências de orçamento via S3/RustFS](quote-evidence.md)
 - [Contrato da API de visitas](visit-api.md)
-- [PR #116 — API de agendamento de visitas](https://github.com/univates-deadlock/techpro-app/pull/116)
+- [Guia das interfaces de serviços e visitas](../frontend/README.md#integração-com-a-api-serviços-e-visitas)
 
 ---
 

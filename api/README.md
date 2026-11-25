@@ -176,7 +176,7 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ---
 
-Os módulos de serviços, visitas, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. A agenda individual do técnico não está disponível.
+Os módulos de serviços, visitas, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. A agenda individual do técnico não está disponível. As telas de serviços e planejamento de visitas estão integradas; a listagem de técnicos para PLANNING e a troca de técnicos pelo navegador permanecem limitadas (CORS não permite PUT; ver [contrato de visitas](../docs/visit-api.md)).
 
 ## Rotas registradas e contratos HTTP
 
