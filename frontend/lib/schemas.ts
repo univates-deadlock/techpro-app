@@ -422,8 +422,11 @@ export type ServiceFormValues = z.infer<typeof serviceSchema>;
    ========================================================================== */
 
 /**
- * Visit form (schedule and edit). scheduledStart is always required;
- * a visit always carries at least one technician (RN-SRV-03).
+ * Visit form (schedule and edit). scheduledStart is always required.
+ * technicianIds may be empty: the API accepts a visit without technicians
+ * (they can be assigned later via PUT /api/visits/:id/technicians) and user
+ * ids are Better Auth strings, not necessarily UUIDs — mirroring
+ * api/src/schemas/visit.schema.ts.
  */
 export const visitSchema = z
   .object({
@@ -432,8 +435,14 @@ export const visitSchema = z
     scheduledEnd: optionalDatetimeLocalSchema,
     description: z.string().trim(),
     technicianIds: z
-      .array(z.string().uuid("Técnico inválido."))
-      .min(1, "Atribua pelo menos um técnico à visita."),
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "Técnico inválido.")
+          .max(128, "Técnico inválido."),
+      )
+      .max(10, "Uma visita aceita no máximo 10 técnicos."),
   })
   .superRefine((data, ctx) => {
     if (

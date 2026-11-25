@@ -22,6 +22,7 @@ import {
   listTechnicians,
   listVisits,
   recordVisitStart,
+  VISIT_EXECUTION_API_ENABLED,
   type TechnicianOption,
   type Visit,
   type VisitStatusValue,
@@ -35,9 +36,9 @@ import {
  * - TECHNICIAN: only the visits assigned to them (agenda do técnico) with the
  *   execution record: real start, real end and managerial notes (RF15/RF16).
  *
- * Data comes from lib/visits-data.ts (fictitious data), which also documents
- * the proposed API contract. The SSR session check happens in the page; the
- * API must enforce the role rules again on every endpoint.
+ * Data comes from lib/visits-data.ts (real API contract of PR #116). The SSR
+ * session check happens in the page; the API must enforce the role rules
+ * again on every endpoint.
  */
 
 export type VisitasUser = { id: string; name: string; role: UserRole };
@@ -72,6 +73,10 @@ export function VisitasPageClient({
 }) {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
+  /* /api/technicians is remaining backend work (#72): PLANNING cannot list
+     technicians until it exists, so the filter shows a notice instead of an
+     empty list pretending to be complete. */
+  const [techniciansLoadFailed, setTechniciansLoadFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -131,6 +136,7 @@ export function VisitasPageClient({
         if (active) setTechnicians(data);
       } catch {
         /* Filter select stays empty; assignment errors surface in the modal. */
+        if (active) setTechniciansLoadFailed(true);
       }
     })();
     return () => {
@@ -195,7 +201,11 @@ export function VisitasPageClient({
       if (serviceFilter && visit.serviceId !== serviceFilter) return false;
       if (statusFilter && visit.status !== statusFilter) return false;
       if (isPlanner && technicianFilter) {
-        if (!visit.technicians.some((tech) => tech.id === technicianFilter)) {
+        if (
+          !visit.technicians.some(
+            (link) => link.technician.id === technicianFilter,
+          )
+        ) {
           return false;
         }
       }
@@ -251,7 +261,9 @@ export function VisitasPageClient({
             <dt className="text-tp-text-muted">Técnicos:</dt>
             <dd className="text-tp-text-body">
               {visit.technicians.length > 0
-                ? visit.technicians.map((tech) => tech.name).join(", ")
+                ? visit.technicians
+                    .map((link) => link.technician.name)
+                    .join(", ")
                 : "—"}
             </dd>
           </div>
@@ -278,26 +290,31 @@ export function VisitasPageClient({
 
         <div className="mt-3 flex flex-wrap gap-2">
           {user.role === "TECHNICIAN" ? (
-            <>
-              {visit.status === "SCHEDULED" ? (
-                <Button
-                  variant="ghost"
-                  disabled={isBusy}
-                  onClick={() => setStartConfirm(visit)}
-                >
-                  Iniciar execução
-                </Button>
-              ) : null}
-              {visit.status === "IN_PROGRESS" ? (
-                <Button
-                  variant="ghost"
-                  disabled={isBusy}
-                  onClick={() => setExecutionVisit(visit)}
-                >
-                  Registrar conclusão
-                </Button>
-              ) : null}
-            </>
+            /* Execution endpoints are remaining backend work (#72) and must
+               not be presented as available in the browser
+               (docs/entrega-final.md). */
+            VISIT_EXECUTION_API_ENABLED ? (
+              <>
+                {visit.status === "SCHEDULED" ? (
+                  <Button
+                    variant="ghost"
+                    disabled={isBusy}
+                    onClick={() => setStartConfirm(visit)}
+                  >
+                    Iniciar execução
+                  </Button>
+                ) : null}
+                {visit.status === "IN_PROGRESS" ? (
+                  <Button
+                    variant="ghost"
+                    disabled={isBusy}
+                    onClick={() => setExecutionVisit(visit)}
+                  >
+                    Registrar conclusão
+                  </Button>
+                ) : null}
+              </>
+            ) : null
           ) : (
             isOpen && (
               <>
@@ -312,13 +329,17 @@ export function VisitasPageClient({
                 >
                   Editar
                 </Button>
-                <Button
-                  variant="ghost"
-                  disabled={isBusy}
-                  onClick={() => setCancelConfirm(visit)}
-                >
-                  Cancelar
-                </Button>
+                {/* Cancellation is also an execution endpoint (status
+                    transition) and stays hidden until the API serves it. */}
+                {VISIT_EXECUTION_API_ENABLED ? (
+                  <Button
+                    variant="ghost"
+                    disabled={isBusy}
+                    onClick={() => setCancelConfirm(visit)}
+                  >
+                    Cancelar
+                  </Button>
+                ) : null}
               </>
             )
           )}
@@ -393,6 +414,11 @@ export function VisitasPageClient({
                 </option>
               ))}
             </select>
+            {techniciansLoadFailed ? (
+              <p className="text-sm text-tp-text-muted">
+                A lista de técnicos não está disponível para o seu perfil.
+              </p>
+            ) : null}
           </div>
         ) : null}
         <div className="flex flex-col gap-1.5">
