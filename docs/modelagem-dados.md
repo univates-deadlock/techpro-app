@@ -1,8 +1,8 @@
 # Modelagem de dados — TechPro
 
-**Entrega final: 25/11/2026.** Modelo lógico-relacional da implementação, derivado do [schema Prisma](../api/prisma/schema.prisma) e das [migrations versionadas](../api/prisma/migrations/README.md). O diagrama original de levantamento permanece no PRD como registro da concepção. Este DER representa as tabelas efetivamente modeladas, não a disponibilidade de todas as operações na interface.
+**Entrega final: 25/11/2026.** O [DER central, apresentado no PRD](documento-requisitos.md#11-modelo-de-banco-de-dados), permanece como a modelagem oficial do projeto, preservada sem alterações. Os diagramas deste documento são complementares e não substituem o DER oficial. Eles refletem o estado da implementação do banco de dados na entrega final, conforme o [schema Prisma](../api/prisma/schema.prisma) e as [migrations versionadas](../api/prisma/migrations/README.md). A existência de uma entidade no banco não implica que todas as suas operações estejam disponíveis na interface.
 
-## Diagrama entidade-relacionamento
+## Diagramas entidade-relacionamento complementares
 
 ### Autenticação e comercial
 

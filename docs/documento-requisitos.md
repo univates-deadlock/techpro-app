@@ -407,7 +407,7 @@ O diagrama geral apresenta os casos de uso originalmente especificados e a assoc
 
 # 11. Modelo de Banco de Dados
 
-Foi adotado um modelo relacional. O diagrama abaixo preserva a modelagem conceitual do levantamento original. Para o DER atualizado da implementação, cardinalidades, chaves e dicionário de todas as tabelas, consulte a [modelagem de dados](modelagem-dados.md) e o [schema Prisma](../api/prisma/schema.prisma).
+Foi adotado um modelo relacional. O DER central apresentado abaixo é a modelagem oficial do projeto, preservada conforme o levantamento original. Os diagramas da [modelagem de dados complementar](modelagem-dados.md) refletem o estado da implementação na entrega final, conforme o [schema Prisma](../api/prisma/schema.prisma), e detalham as entidades, cardinalidades e chaves efetivamente modeladas, sem substituir o DER oficial.
 
 ![Diagrama Entidade-Relacionamento da TechPro](../assets/images/prd/diagrama-entidade-relacionamento.png)
 
