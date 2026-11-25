@@ -5,6 +5,7 @@ import type {
   ListVisitsQuery,
   SetVisitTechniciansInput,
   UpdateVisitInput,
+  VisitExecutionInput,
 } from "../schemas/visit.schema.js";
 import { AppError } from "../utils/AppError.js";
 
@@ -59,6 +60,12 @@ export const DEFAULT_VISIT_DURATION_MS = 2 * 60 * 60 * 1000;
 
 const isClosed = (status: string) => status === "COMPLETED" || status === "CANCELLED";
 
+const ensureFutureSchedule = (start: Date) => {
+  if (start.getTime() < Date.now()) {
+    throw new AppError("Não é possível agendar uma visita no passado", 422);
+  }
+};
+
 // Locks the visit row and ensures it exists (same pattern used for services).
 const getVisitForUpdateOrThrow = async (tx: Prisma.TransactionClient, id: string) => {
   await tx.$queryRaw`SELECT "id" FROM "service_visit" WHERE "id" = ${id}::uuid FOR UPDATE`;
@@ -70,6 +77,7 @@ const getVisitForUpdateOrThrow = async (tx: Prisma.TransactionClient, id: string
       status: true,
       scheduledStart: true,
       scheduledEnd: true,
+      actualStart: true,
       technicians: { select: { technicianId: true } },
     },
   });
@@ -122,7 +130,7 @@ const findConflicts = async (
   const overlapping = await tx.serviceVisit.findMany({
     where: {
       ...(ignoreVisitId && { id: { not: ignoreVisitId } }),
-      status: { not: "CANCELLED" },
+      status: { in: ["SCHEDULED", "IN_PROGRESS"] },
       scheduledStart: { lt: windowEnd },
       OR: [
         { scheduledEnd: { gt: start } },
@@ -185,6 +193,7 @@ export const createVisit = async (
       throw new AppError("Não é possível agendar visita em serviço concluído ou cancelado", 409);
     }
 
+    ensureFutureSchedule(data.scheduledStart);
     const technicianIds = data.technicianIds ?? [];
 
     if (technicianIds.length > 0) {
@@ -288,11 +297,16 @@ export const updateVisit = async (id: string, data: UpdateVisitInput): Promise<V
       throw new AppError("O fim agendado deve ser posterior ou igual ao início agendado", 422);
     }
 
-    const timeChanged = data.scheduledStart !== undefined || data.scheduledEnd !== undefined;
-    const technicianIds = visit.technicians.map((item) => item.technicianId);
+    const timeChanged = scheduledStart.getTime() !== visit.scheduledStart.getTime() ||
+      scheduledEnd?.getTime() !== visit.scheduledEnd?.getTime();
+    if (timeChanged) ensureFutureSchedule(scheduledStart);
+    const technicianIds = data.technicianIds ?? visit.technicians.map((item) => item.technicianId);
+    const assignmentChanged = data.technicianIds !== undefined;
 
-    if (timeChanged && !data.confirmConflicts && technicianIds.length > 0) {
+    if ((timeChanged || assignmentChanged) && technicianIds.length > 0) {
       await lockAndValidateTechnicians(tx, technicianIds);
+    }
+    if ((timeChanged || assignmentChanged) && !data.confirmConflicts && technicianIds.length > 0) {
 
       const conflicts = await findConflicts(tx, {
         technicianIds,
@@ -306,6 +320,15 @@ export const updateVisit = async (id: string, data: UpdateVisitInput): Promise<V
       }
     }
 
+    if (assignmentChanged) {
+      await tx.visitTechnician.deleteMany({ where: { visitId: id, technicianId: { notIn: technicianIds } } });
+      if (technicianIds.length > 0) {
+        await tx.visitTechnician.createMany({
+          data: technicianIds.map((technicianId) => ({ visitId: id, technicianId })),
+          skipDuplicates: true,
+        });
+      }
+    }
     const updated = await tx.serviceVisit.update({
       where: { id },
       data: {
@@ -371,3 +394,48 @@ export const setVisitTechnicians = async (
 
     return { ok: true, visit: updated };
   });
+
+// Only the minimal assignment data is exposed to planners.
+export const listActiveTechnicians = () => prisma.user.findMany({
+  where: { role: "TECHNICIAN", isActive: true },
+  select: { id: true, name: true },
+  orderBy: [{ name: "asc" }, { id: "asc" }],
+});
+
+// Both managers and the assigned technician can record actual execution. The
+// authenticated technician ID is supplied by the controller, never the client.
+export const executeVisit = (id: string, data: VisitExecutionInput, technicianId?: string) =>
+  prisma.$transaction(async (tx) => {
+    const visit = await getVisitForUpdateOrThrow(tx, id);
+    if (technicianId && !visit.technicians.some((item) => item.technicianId === technicianId)) {
+      throw new AppError("Acesso negado à visita", 403);
+    }
+    const starting = data.status === "IN_PROGRESS";
+    if (starting ? visit.status !== "SCHEDULED" :
+      !(visit.status === "IN_PROGRESS" || (!technicianId && visit.status === "SCHEDULED"))) {
+      throw new AppError("Transição de status da visita inválida", 409);
+    }
+    const now = new Date();
+    // Allow planners to close an overdue scheduled visit without inventing a start time.
+    if (!starting && visit.status === "SCHEDULED" && visit.scheduledStart > now) {
+      throw new AppError("Não é possível concluir uma visita ainda não iniciada e prevista para o futuro", 422);
+    }
+    if (!starting && visit.actualStart && visit.actualStart > now) {
+      throw new AppError("O fim real deve ser posterior ao início real", 422);
+    }
+    return tx.serviceVisit.update({
+      where: { id },
+      data: {
+        status: data.status,
+        ...(starting ? { actualStart: now } : { actualEnd: now }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+      },
+      select: visitSelect,
+    });
+  });
+
+export const cancelVisit = (id: string) => prisma.$transaction(async (tx) => {
+  const visit = await getVisitForUpdateOrThrow(tx, id);
+  if (isClosed(visit.status)) throw new AppError("A visita já foi encerrada", 409);
+  return tx.serviceVisit.update({ where: { id }, data: { status: "CANCELLED" }, select: visitSelect });
+});

@@ -9,7 +9,7 @@ import { formatDateTime } from "@/lib/money";
 import { recordVisitCompletion, type Visit } from "@/lib/visits-data";
 
 /**
- * Visit conclusion form (TECHNICIAN, RF16).
+ * Visit conclusion form (assigned TECHNICIAN or planner, RF16).
  *
  * Registers the real end (now) plus managerial notes without replacing the
  * official external OS data. The real start, when present, is displayed for
@@ -106,7 +106,7 @@ export function VisitExecutionModal({
             className="w-full rounded-tp-sm border border-tp-border bg-white px-3 py-2.5 text-base text-tp-text-main focus:outline-none focus:border-tp-primary disabled:bg-tp-neutral-100"
           />
           <p className="mt-1.5 text-sm text-tp-text-muted">
-            O fim real será registrado como o horário atual. As observações
+            O fim real será registrado como o horário atual. Se o início não foi registrado, ele permanecerá em branco. As observações
             complementam a OS oficial, sem substituí-la (RF16).
           </p>
 
