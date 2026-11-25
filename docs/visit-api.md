@@ -1,15 +1,11 @@
 # API de visitas — agendamento e técnicos
 
-Este guia acompanha a implementação de visitas e da atribuição de técnicos. Ela
-depende da API de serviços ([service-api.md](service-api.md), PR #112) e os
-contratos descrevem a **branch de desenvolvimento**, não uma funcionalidade já
-publicada em produção. As regras seguem o PRD (RF14, RF15, RF23, RN-SRV-03 e
-RNF06).
+A API de planejamento de visitas e atribuição de técnicos foi integrada à main pelo PR #116, com CI aprovada. Depende da [API de serviços](service-api.md) (PR #112). Este contrato descreve a implementação integrada, não a homologação de produção. Requisitos relacionados: RF13, RF14, RF22, RN-SRV-03 e RNF06.
 
 Uma visita é um agendamento dentro de um serviço, com data/horário e um ou mais
 técnicos. Este módulo cobre o planejamento: criar, editar e consultar visitas,
 atribuir e desatribuir técnicos e sinalizar conflitos de horário. Início e fim
-reais, mudança de status da visita e agenda do próprio técnico (RF16, RF17) não
+reais, mudança de status da visita e agenda do próprio técnico (RF15, RF16) não
 fazem parte deste módulo.
 
 ## Autorização e rotas
@@ -37,7 +33,7 @@ Exemplo de agendamento já com técnicos:
 {
   "scheduledStart": "2026-12-01T09:00:00-03:00",
   "scheduledEnd": "2026-12-01T12:00:00-03:00",
-  "description": "Instalação do evaporador",
+  "description": "Instalação de câmera",
   "notes": "Cliente pede contato antes de chegar",
   "technicianIds": ["<id-do-tecnico-1>", "<id-do-tecnico-2>"]
 }
@@ -75,7 +71,7 @@ Exemplo de resposta (resumido):
   "actualStart": null,
   "actualEnd": null,
   "status": "SCHEDULED",
-  "description": "Instalação do evaporador",
+  "description": "Instalação de câmera",
   "notes": "Cliente pede contato antes de chegar",
   "service": {
     "id": "<uuid-do-servico>",

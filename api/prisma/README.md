@@ -3,8 +3,9 @@
 `schema.prisma` descreve entidades, campos, relações e enums do banco PostgreSQL. A presença de um modelo no schema não significa que seus endpoints HTTP já existam:
 
 - **Autenticação (Better Auth):** `User` (perfil e atividade, sem senha), `Account` (credencial com hash de senha), `Session` (sessão persistida, token e expiração) e `Verification` (estrutura da biblioteca para fluxos futuros de verificação).
-- **Negócio com CRUD implementado na API:** `Client`, `Quote` e `QuoteItem` (além da administração de `User`).
-- **Negócio apenas modelado no banco (sem rotas na entrega atual):** `Service`, `ServiceVisit`, `VisitTechnician`, `Warranty` e `Revision`.
+- **Negócio integrado à interface e API:** `Client`, `Quote`, `QuoteItem`, `Warranty`, `Revision` (além da administração de `User`).
+- **Negócio integrado somente à API:** `Service`, `ServiceVisit` e `VisitTechnician`. As interfaces de serviços/visitas e execução técnica são pós-MVP; os campos de execução no banco não significam que haja endpoints para alterá-los.
+- **Modelagem atual:** [DER, dicionário e integridade](../../docs/modelagem-dados.md).
 
 Comandos executados a partir da raiz do repositório:
 
