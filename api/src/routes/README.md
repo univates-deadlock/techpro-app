@@ -5,9 +5,12 @@ Cada roteador associa método e caminho HTTP a um controller, sendo montado sob 
 - `health.route.ts` (`/api/health`): verificação pública de disponibilidade HTTP.
 - `user.route.ts` (`/api/users`): protegido por `router.use(requireActiveUser, requireAdmin)` (exclusivo `ADMIN`).
 - `client.route.ts` (`/api/clients`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`.
-- `quote.route.ts` (`/api/quotes`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo as sub-rotas `/:id/items` e `/:id/items/:itemId`.
-- `service.route.ts` (`/api/services`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo a sub-rota `/:id/status`.
+- `quote.route.ts` (`/api/quotes`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo itens, envio, aprovação, rejeição, expiração e evidências privadas.
+- `service.route.ts` (`/api/services`): protegido por `requireActiveUser` e `requireRole("ADMIN", "PLANNING")`, incluindo as sub-rotas `/:id/status` e `/:id/visits`.
 - `visit.route.ts` (`/api/visits`): protegido por `requireActiveUser`, com `requireRole("ADMIN", "PLANNING")` aplicado rota a rota (`GET /`, `GET /:id`, `PATCH /:id` e `PUT /:id/technicians`), para permitir perfis diferentes em rotas futuras do mesmo módulo.
+
+- `warranty.route.ts` (`/api/warranties`) e `revision.route.ts` (`/api/revisions`): CRUD protegido por sessão ativa e ADMIN/PLANNING.
+- `operational.route.ts` (montado em `/api`): `GET /alerts` e `GET /dashboard`, exclusivos de ADMIN/PLANNING.
 
 As rotas `/api/auth/*` são montadas diretamente em `app.ts` pelo handler do Better Auth, antes de `express.json()`.
 

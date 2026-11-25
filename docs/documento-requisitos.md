@@ -4,7 +4,7 @@
 **Disciplina:** Laboratório de Programação para Internet  
 **Professor:** Mateus Roveda  
 **Local:** Lajeado, Rio Grande do Sul  
-**Data:** setembro de 2026
+**Data:** setembro de 2026 — revisão final em 25/11/2026
 
 ## Integrantes
 
@@ -13,7 +13,7 @@
 - Mateus Carniel Brambilla
 - Taina Luiza Schmidt
 
- > **Nota de fechamento (24/11/2026):** este documento preserva os requisitos e casos de uso originalmente levantados. O MVP efetivamente entregue é menor; consulte a [matriz de entrega final e backlog pós-MVP](entrega-final.md). As funcionalidades adiadas não são consideradas concluídas.
+ > **Nota de fechamento (25/11/2026):** este documento preserva os requisitos e casos de uso originalmente levantados. O MVP efetivamente entregue é menor; consulte a [matriz de entrega final e backlog pós-MVP](entrega-final.md). As funcionalidades adiadas não são consideradas concluídas.
 
 ---
 
@@ -28,6 +28,7 @@
    - [5.1 Escopo originalmente previsto para o MVP](#51-escopo-originalmente-previsto-para-o-mvp)
    - [5.2 Opcional / meta adicional do MVP](#52-opcional--meta-adicional-do-mvp)
    - [5.3 Evoluções futuras — fora do MVP](#53-evoluções-futuras--fora-do-mvp)
+   - [5.4 MVP efetivamente entregue](#54-mvp-efetivamente-entregue)
 6. [Usuários e Atores](#6-usuários-e-atores)
 7. [Requisitos Funcionais](#7-requisitos-funcionais)
 8. [Requisitos Não Funcionais](#8-requisitos-não-funcionais)
@@ -124,7 +125,7 @@ O módulo de acompanhamento manual de licitações é considerado opcional para 
 
 ## 5.3 Evoluções futuras — fora do MVP
 
-Além dos itens originalmente previstos para evolução, foram adiados no fechamento: interface de serviços e visitas, agenda e execução dos técnicos (RF10–RF16 na cobertura de interface/visitas), expiração e evidências pela interface (RF09/RF23), histórico consolidado, filtros operacionais, recuperação de senha, backup (RNF09) e validação ampliada de QA/produção (incluindo RNF05). A API de serviços, garantias/revisões e indicadores permanece integrada; a API de planejamento de visitas e atribuição de técnicos é contemplada pelo PR #116, sem interface, agenda individual ou execução. Veja a [matriz de rastreabilidade](entrega-final.md).
+Além dos itens originalmente previstos para evolução, foram adiados no fechamento: interface de serviços e visitas, agenda e execução dos técnicos (RF10–RF16 na cobertura de interface/visitas), expiração e evidências pela interface (RF09/RF23), histórico consolidado, filtros operacionais, recuperação de senha, backup (RNF09) e validação ampliada de QA/produção (incluindo RNF05). A API de serviços, garantias/revisões e indicadores permanece integrada; a API de planejamento de visitas e atribuição de técnicos foi integrada pelo PR #116, sem interface, agenda individual ou execução. Veja a [matriz de rastreabilidade](entrega-final.md).
 
 - Automação de orçamento, sujeita a reavaliação com o cliente.
 - Pesquisa automática de preços e integração com catálogos/fornecedores. 
@@ -135,68 +136,75 @@ Além dos itens originalmente previstos para evolução, foram adiados no fecham
 - Substituição do controle de estoque ou da OS oficial.  
 - Venda de produtos por técnicos, sem movimentação de estoque.
 
+## 5.4 MVP efetivamente entregue
+
+- Autenticação, sessão, perfis, usuários, clientes e orçamentos: interface e API; envio, aprovação, rejeição e PDF; expiração pela API.
+- Serviços, referência à OS externa, planejamento de visitas e atribuição de técnicos: API integrada, sem interface de serviços ou visitas.
+- Garantias, revisões, alertas e dashboard de administrador/planejamento: interface e API; evidência de aprovação: API privada, configuração de produção e interface pendentes.
+- Agenda individual, execução técnica, backup, integrações externas e validação ampliada ficam no pós-MVP. A entrega acadêmica não equivale à homologação produtiva.
+
+Veja a [matriz de entrega final](entrega-final.md), os status dos requisitos a seguir e a [modelagem atual](modelagem-dados.md).
+
 ---
 
 # 6. Usuários e Atores
 
 | Ator | Contexto | Principais permissões |
 | :---- | :---- | :---- |
-| **Gestor / Administrador** | Responsável com atuação transversal entre comercial, planejamento e execução. | Acesso completo; usuários; clientes; orçamentos; planejamento; garantias; revisões; painel operacional; licitações. |
-| **Orçamento / Planejamento** | Duas pessoas fixas responsáveis pela parte comercial e planejamento. | Clientes; orçamentos; aprovação; serviços; visitas; técnicos; OS externa; garantias; revisões; alertas; licitações. |
-| **Técnico** | Duas pessoas fixas de instalação e um técnico variável quando necessário. | Agenda e serviços atribuídos; dados necessários do cliente; informações da visita. |
+| **Gestor / Administrador** | Responsável com atuação transversal entre comercial, planejamento e execução. | Usuários, clientes, orçamentos, garantias, revisões e painel; serviços e visitas pela API. Licitações: pós-MVP. |
+| **Orçamento / Planejamento** | Duas pessoas fixas responsáveis pela parte comercial e planejamento. | Clientes, orçamentos, garantias, revisões e alertas; serviços, visitas, atribuição de técnicos e referência à OS pela API. Licitações: pós-MVP. |
+| **Técnico** | Duas pessoas fixas de instalação e um técnico variável quando necessário. | Autenticação e acesso ao shell interno; sem acesso comercial. Agenda individual, dados das visitas atribuídas e registro de execução: pós-MVP. |
 
 ---
 
 # 7. Requisitos Funcionais
 
-| ID | Requisito verificável | 
-| :---- | :---- |
-| **RF01** | O sistema deve exigir autenticação para qualquer funcionalidade interna. |
-| **RF02** | O administrador deve poder criar, editar, ativar e desativar usuários internos. |
-| **RF03** | O sistema deve restringir funcionalidades conforme os perfis de administrador, planejador e técnico. |
-| **RF04** | Usuários autorizados devem poder cadastrar, editar, consultar e inativar clientes pessoa física ou jurídica. |
-| **RF05** | Usuários de planejamento e administradores devem poder criar um orçamento vinculado a um cliente. |
-| **RF06** | Cada orçamento deve aceitar vários itens dos tipos produto, serviço ou outro, com descrição, quantidade, valor unitário (R$) e desconto em reais (R$). |
-| **RF07** | O sistema deve recalcular o valor total do orçamento em reais (R$) a partir dos itens e dos descontos por item e geral registrados em R$. |
-| **RF08** | O orçamento pode ser editado apenas enquanto estiver em aberto; após aprovado, rejeitado ou expirado, seu conteúdo não pode ser alterado.   |
-| **RF09** | O sistema deve permitir registrar aprovação, rejeição ou expiração de um orçamento, com data, observação e evidência opcional. |
-| **RF10** | O sistema deve permitir criar serviço a partir de orçamento aprovado ou diretamente para um cliente. |
-| **RF11** | Serviços diretos devem registrar uma origem entre SUPORTE, MANUTENÇÃO, REVISÃO, GARANTIA ou OUTRO. |
-| **RF12** | Um serviço deve permitir armazenar referência opcional ao número da OS existente no software atual. |
-| **RF13** | Um serviço deve possuir uma ou mais visitas planejadas, com data/horário, status, local e observações. |
-| **RF14** | Cada visita deve permitir atribuir um ou mais técnicos. |
-| **RF15** | Técnicos devem visualizar sua agenda e os serviços/visitas aos quais estão atribuídos. |
-| **RF16** | Técnicos devem poder registrar início/fim real, status e observações gerenciais da visita, sem substituir os dados formais da OS externa. |
-| **RF17** | Um serviço deve suportar múltiplas garantias, distinguindo garantia de SERVIÇO e de FABRICANTE. |
-| **RF18** | Garantias devem registrar início, término, descrição e, para fabricante, fabricante e referência opcional ao produto. |
-| **RF19** | Um serviço deve suportar múltiplas revisões com data prevista e status PENDENTE, AGENDADA, REALIZADA ou CANCELADA. |
-| **RF20** | O sistema deve exibir alertas internos para revisões próximas/atrasadas e garantias próximas do vencimento. |
-| **RF21** | O painel operacional deve apresentar ao menos orçamentos pendentes, serviços/visitas próximas, revisões pendentes e garantias próximas do vencimento. |
-| **RF22** | O sistema deve permitir busca e filtragem de clientes, orçamentos, serviços e agenda por informações relevantes e status. |
-| **RF23** | Quando uma aprovação possuir evidência, o sistema deve permitir anexar arquivo nos formatos e limites definidos nos RNFs. |
-
+| ID | Requisito verificável (levantamento original) | Situação final |
+| :---- | :---- | :---- |
+| **RF01** | O sistema deve exigir autenticação para qualquer funcionalidade interna. | Integrado — UI/API |
+| **RF02** | O administrador deve poder criar, editar, ativar e desativar usuários internos. | Integrado — UI/API |
+| **RF03** | O sistema deve restringir funcionalidades conforme os perfis de administrador, planejador e técnico. | Integrado — RBAC; experiência técnica futura |
+| **RF04** | Usuários autorizados devem poder cadastrar, editar, consultar e inativar clientes pessoa física ou jurídica. | Integrado — UI/API |
+| **RF05** | Usuários de planejamento e administradores devem poder criar um orçamento vinculado a um cliente. | Integrado — UI/API |
+| **RF06** | Cada orçamento deve aceitar vários itens dos tipos produto, serviço ou outro, com descrição, quantidade, valor unitário (R$) e desconto em reais (R$). | Integrado — UI/API |
+| **RF07** | O sistema deve recalcular o valor total do orçamento em reais (R$) a partir dos itens e dos descontos por item e geral registrados em R$. | Integrado — UI/API |
+| **RF08** | O orçamento pode ser editado apenas enquanto estiver em aberto; após aprovado, rejeitado ou expirado, seu conteúdo não pode ser alterado. | Integrado — UI/API |
+| **RF09** | O sistema deve permitir registrar aprovação, rejeição ou expiração de um orçamento, com data, observação e evidência opcional. | Parcial — expiração e evidência somente API |
+| **RF10** | O sistema deve permitir criar serviço a partir de orçamento aprovado ou diretamente para um cliente. | Integrado — API; UI futura |
+| **RF11** | Serviços diretos devem registrar uma origem entre SUPORTE, MANUTENÇÃO, REVISÃO, GARANTIA ou OUTRO. | Integrado — API; UI futura |
+| **RF12** | Um serviço deve permitir armazenar referência opcional ao número da OS existente no software atual. | Integrado — API; UI futura |
+| **RF13** | Um serviço deve possuir uma ou mais visitas planejadas, com data/horário, status, local e observações. | Parcial — planejamento API; local derivado do cliente; UI futura |
+| **RF14** | Cada visita deve permitir atribuir um ou mais técnicos. | Integrado — API; UI futura |
+| **RF15** | Técnicos devem visualizar sua agenda e os serviços/visitas aos quais estão atribuídos. | Pós-MVP |
+| **RF16** | Técnicos devem poder registrar início/fim real, status e observações gerenciais da visita, sem substituir os dados formais da OS externa. | Pós-MVP |
+| **RF17** | Um serviço deve suportar múltiplas garantias, distinguindo garantia de SERVIÇO e de FABRICANTE. | Integrado — UI/API |
+| **RF18** | Garantias devem registrar início, término, descrição e, para fabricante, fabricante e referência opcional ao produto. | Integrado — UI/API |
+| **RF19** | Um serviço deve suportar múltiplas revisões com data prevista e status PENDENTE, AGENDADA, REALIZADA ou CANCELADA. | Integrado — UI/API |
+| **RF20** | O sistema deve exibir alertas internos para revisões próximas/atrasadas e garantias próximas do vencimento. | Integrado — alertas e dashboard ADMIN/PLANNING |
+| **RF21** | O painel operacional deve apresentar ao menos orçamentos pendentes, serviços/visitas próximas, revisões pendentes e garantias próximas do vencimento. | Parcial — dashboard ADMIN/PLANNING; visão técnica futura |
+| **RF22** | O sistema deve permitir busca e filtragem de clientes, orçamentos, serviços e agenda por informações relevantes e status. | Parcial — filtros de serviço/visita pela API |
+| **RF23** | Quando uma aprovação possuir evidência, o sistema deve permitir anexar arquivo nos formatos e limites definidos nos RNFs. | Parcial — API privada; UI e produção pendentes |
 ---
 
 # 8. Requisitos Não Funcionais
 
-| ID | Categoria | Critério |
-| :---- | :---- | :---- |
-| **RNF01** | Privacidade | A aplicação deve ser exclusivamente interna e não deve expor páginas de dados do cliente sem autenticação. |
-| **RNF02** | Autorização | Uma tentativa de acessar recurso não permitido ao perfil deve ser bloqueada no backend, independentemente de a interface ocultar ou não o botão. |
-| **RNF03** | Segurança em trânsito | A implantação de produção deve utilizar HTTPS para todo acesso ao sistema. |
-| **RNF04** | Credenciais | Senhas devem ser armazenadas apenas como hash resistente a senha; nenhuma senha em texto puro pode ser registrada em log. |
-| **RNF05** | Desempenho | Em carga de até 20 usuários internos concorrentes, 95% das operações comuns de consulta/cadastro devem responder em até 2 segundos, desconsiderando upload de arquivos. |
-| **RNF06** | Integridade | A criação/edição do orçamento, a decisão e a gravação dos itens devem usar transação quando houver mais de uma alteração dependente, evitando estado parcial.  |
-| **RNF07** | Mensagens de erro | Falhas de validação devem identificar o campo ou regra violada e não devem resultar apenas em mensagem genérica. |
-| **RNF08** | Arquivos | Evidências de aprovação devem aceitar PDF, PNG, JPG/JPEG com no máximo 10 MB por arquivo; arquivos maiores ou de tipo não aceito devem ser recusados com explicação do limite. |
-| **RNF09** | Backup | O banco de produção deve possuir backup automático diário, com pelo menos 7 cópias diárias recuperáveis. |
-| **RNF10** | Responsividade | Fluxos essenciais devem funcionar sem rolagem horizontal indevida em larguras de 360 px, 768 px e 1280 px. |
-| **RNF11** | Compatibilidade | A aplicação deve ser validada na versão estável mais recente de Chrome/Chromium e Firefox (opcional). |
-| **RNF12** | Acessibilidade | Formulários e ações principais devem ser operados por teclado, possuir foco visível e rótulos associados aos campos. |
-| **RNF13** | Observabilidade | Erros de servidor devem ser registrados com data/hora e contexto técnico suficiente para diagnóstico, sem incluir senhas ou conteúdo sensível desnecessário. |
-| **RNF14** | Qualidade | O pipeline de integração deve falhar se lint, verificação de tipos ou testes automatizados obrigatórios falharem. |
-| **RNF15** | Persistência temporal | Registros críticos devem manter data de criação e atualização e autoria quando aplicável, permitindo identificar quando e por quem a informação foi criada. |
-
+| ID | Categoria | Critério (levantamento original) | Situação final |
+| :---- | :---- | :---- | :---- |
+| **RNF01** | Privacidade | A aplicação deve ser exclusivamente interna e não deve expor páginas de dados do cliente sem autenticação. | Implementado — proteção SSR/API |
+| **RNF02** | Autorização | Uma tentativa de acessar recurso não permitido ao perfil deve ser bloqueada no backend, independentemente de a interface ocultar ou não o botão. | Implementado — RBAC; auditoria ampliada futura |
+| **RNF03** | Segurança em trânsito | A implantação de produção deve utilizar HTTPS para todo acesso ao sistema. | Configuração HTTPS documentada; homologação não comprovada |
+| **RNF04** | Credenciais | Senhas devem ser armazenadas apenas como hash resistente a senha; nenhuma senha em texto puro pode ser registrada em log. | Implementado — credenciais com hash; auditoria ampliada futura |
+| **RNF05** | Desempenho | Em carga de até 20 usuários internos concorrentes, 95% das operações comuns de consulta/cadastro devem responder em até 2 segundos, desconsiderando upload de arquivos. | Pós-MVP — medição não comprovada |
+| **RNF06** | Integridade | A criação/edição do orçamento, a decisão e a gravação dos itens devem usar transação quando houver mais de uma alteração dependente, evitando estado parcial. | Implementado — transações; regressão ampliada futura |
+| **RNF07** | Mensagens de erro | Falhas de validação devem identificar o campo ou regra violada e não devem resultar apenas em mensagem genérica. | Implementação e testes de validação; auditoria ampliada futura |
+| **RNF08** | Arquivos | Evidências de aprovação devem aceitar PDF, PNG, JPG/JPEG com no máximo 10 MB por arquivo; arquivos maiores ou de tipo não aceito devem ser recusados com explicação do limite. | API e testes integrados; UI/produção pendentes |
+| **RNF09** | Backup | O banco de produção deve possuir backup automático diário, com pelo menos 7 cópias diárias recuperáveis. | Pós-MVP — não implementado |
+| **RNF10** | Responsividade | Fluxos essenciais devem funcionar sem rolagem horizontal indevida em larguras de 360 px, 768 px e 1280 px. | Implementação responsiva; verificação completa pendente |
+| **RNF11** | Compatibilidade | A aplicação deve ser validada na versão estável mais recente de Chrome/Chromium e Firefox (opcional). | Validação opcional não comprovada |
+| **RNF12** | Acessibilidade | Formulários e ações principais devem ser operados por teclado, possuir foco visível e rótulos associados aos campos. | Recursos de acessibilidade presentes; auditoria pendente |
+| **RNF13** | Observabilidade | Erros de servidor devem ser registrados com data/hora e contexto técnico suficiente para diagnóstico, sem incluir senhas ou conteúdo sensível desnecessário. | Parcial — tratamento de erros; validação de logs pendente |
+| **RNF14** | Qualidade | O pipeline de integração deve falhar se lint, verificação de tipos ou testes automatizados obrigatórios falharem. | Implementado — CI de lint/tipagem/build/testes |
+| **RNF15** | Persistência temporal | Registros críticos devem manter data de criação e atualização e autoria quando aplicável, permitindo identificar quando e por quem a informação foi criada. | Implementado nos registros críticos; auditoria ampliada futura |
 ---
 
 # 9. Histórias de Usuário
@@ -223,7 +231,7 @@ Além dos itens originalmente previstos para evolução, foram adiados no fecham
 
 ## 10.1 Diagrama geral
 
-O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associação dos atores (Gestor/Administrador, Orçamento/Planejamento e Técnico) com cada funcionalidade.
+O diagrama geral apresenta os casos de uso originalmente especificados e a associação dos atores com as funcionalidades planejadas. Não constitui evidência de implementação; consulte os status dos RFs e o [fluxo efetivamente implementado](modelagem-dados.md#fluxo-disponível-e-limites).
 
 ![Diagrama geral de casos de uso da TechPro](../assets/images/prd/diagrama-casos-de-uso.png)
 
@@ -399,7 +407,7 @@ O diagrama geral apresenta os casos de uso do sistema interno TechPro e a associ
 
 # 11. Modelo de Banco de Dados
 
-Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principais entidades e cardinalidades.
+Foi adotado um modelo relacional. O DER central apresentado abaixo é a modelagem oficial do projeto, preservada conforme o levantamento original. Os diagramas da [modelagem de dados complementar](modelagem-dados.md) refletem o estado da implementação na entrega final, conforme o [schema Prisma](../api/prisma/schema.prisma), e detalham as entidades, cardinalidades e chaves efetivamente modeladas, sem substituir o DER oficial.
 
 ![Diagrama Entidade-Relacionamento da TechPro](../assets/images/prd/diagrama-entidade-relacionamento.png)
 
@@ -415,6 +423,10 @@ Foi adotado um modelo relacional. Abaixo é apresentado o diagrama das principai
 | **Visita de serviço (SERVICE_VISIT)** | Idas/agendamentos vinculados ao serviço. |
 | **Técnico da visita (VISIT_TECHNICIAN)** | Relação N:N entre visita e técnico. |
 | **Garantia (WARRANTY)** | Garantias de serviço ou fabricante. |
+| **Revisão (REVISION)** | Retorno programado, associado ao serviço e opcionalmente a uma visita. |
+| **Sessão (SESSION)** | Sessão autenticada persistida. |
+| **Conta (ACCOUNT)** | Credenciais gerenciadas pelo Better Auth. |
+| **Verificação (VERIFICATION)** | Estrutura auxiliar do Better Auth; recuperação de senha pós-MVP. |
 
 ---
 

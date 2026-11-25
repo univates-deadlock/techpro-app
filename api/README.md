@@ -176,6 +176,8 @@ Os controles de acesso ficam em `src/middlewares/` e nunca confiam em dados de i
 
 ---
 
+Os módulos de serviços, visitas, garantias, revisões, alertas, dashboard e evidências exigem sessão ativa de ADMIN ou PLANNING; TECHNICIAN recebe 403 e requisições sem sessão recebem 401. A agenda individual do técnico não está disponível.
+
 ## Rotas registradas e contratos HTTP
 
 A API inclui também serviços (`/api/services`, contrato em [`docs/service-api.md`](../docs/service-api.md)), garantias, revisões e indicadores operacionais (`/api/warranties`, `/api/revisions`, `/api/alerts`, `/api/dashboard`, contratos em [`docs/aftercare-api.md`](../docs/aftercare-api.md)). O planejamento de visitas (`/api/visits` e `/api/services/:id/visits`) está documentado no [contrato de visitas](../docs/visit-api.md); agenda individual e execução técnica ficam no pós-MVP. Consulte a [matriz de entrega](../docs/entrega-final.md).
@@ -353,7 +355,7 @@ Nenhum cálculo monetário utiliza aritmética de ponto flutuante (`number`) do 
 api/
 ├── prisma/
 │   ├── schema.prisma               # Modelos Better Auth + entidades de negócio e enums
-│   └── migrations/                 # 4 migrations SQL versionadas aplicadas em ordem
+│   └── migrations/                 # 5 migrations SQL versionadas aplicadas em ordem
 ├── prisma.config.ts                # Configuração do Prisma CLI (lê DATABASE_URL)
 ├── src/
 │   ├── index.ts                    # Inicializa o listener HTTP na porta configurada
@@ -375,7 +377,7 @@ api/
 ### Configuração e migrations do Prisma
 
 - O cliente tipado é gerado em `api/generated/prisma` (diretório ignorado pelo Git e recriado por `npm run db:generate --prefix api` — nunca o edite manualmente).
-- As migrations existentes em [`prisma/migrations/`](prisma/migrations/README.md) criam as tabelas de negócio iniciais, adaptam a tabela `user` e criam `session`/`account`/`verification` para o Better Auth, adicionam `is_active` e reintroduzem `role` com padrão `TECHNICIAN`.
+- As migrations existentes em [`prisma/migrations/`](prisma/migrations/README.md) criam as tabelas de negócio iniciais, adaptam a tabela `user` e criam `session`/`account`/`verification` para o Better Auth, adicionam `is_active` e reintroduzem `role` com padrão `TECHNICIAN` e acrescentam os autores opcionais de envio e decisão do orçamento.
 - Aplique migrations existentes sempre com `npm run db:migrate --prefix api` (`prisma migrate deploy`). Nunca reescreva migrations já versionadas nem execute `migrate reset` em bancos com dados que devam ser preservados.
 
 ---

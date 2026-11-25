@@ -2,7 +2,7 @@
 
 Este diretório reúne os artefatos de descoberta, especificação de requisitos e operação do **TechPro App**, servindo como índice central da documentação do repositório na **entrega final**.
 
-> **Como ler esta documentação:** os documentos de descoberta e requisitos preservam a visão completa do produto originalmente planejado, enquanto os guias técnicos descrevem o que está efetivamente implementado no código da branch `main`. Não utilize o PRD como evidência de funcionalidade concluída sem verificar a matriz abaixo ou o código-fonte.
+> **Como ler esta documentação:** os documentos de descoberta e requisitos preservam a visão completa do produto originalmente planejado, enquanto os guias técnicos descrevem o que está efetivamente implementado no código da branch `main`. A matriz de entrega e os status do PRD distinguem o escopo inicialmente planejado da implementação final. Todos os documentos necessários à entrega acadêmica estão versionados neste repositório.
 
 ---
 
@@ -11,6 +11,7 @@ Este diretório reúne os artefatos de descoberta, especificação de requisitos
 Documentos produzidos nas etapas de levantamento com o cliente e especificação do sistema:
 
 - **[Documento de Requisitos (PRD)](documento-requisitos.md)** — problema de negócio, escopo do MVP, atores, requisitos funcionais (`RF01`–`RF23`) e não funcionais (`RNF01`–`RNF15`), histórias de usuário, casos de uso, diagrama entidade-relacionamento e glossário.
+- **[Modelagem de dados](modelagem-dados.md)** — DER atualizado, dicionário de entidades, restrições e fluxo implementado, com referência ao schema e migrations.
 - **[Contexto do cliente](contexto-cliente.md)** — levantamento prévio sobre a atuação, serviços, público e presença institucional da TechPro (Sprint 0).
 - **[Perguntas ao cliente](perguntas-cliente.md)** — roteiro utilizado na entrevista de descoberta para mapear gargalos operacionais e prioridades.
 
@@ -44,11 +45,16 @@ Guias que detalham a implementação interna e a organização em camadas de cad
 ## 4. Procedimentos de desenvolvimento, testes e implantação
 
 - **[Execução local e checagens (`README.md`)](../README.md#8-pré-requisitos-e-configuração-do-ambiente)** — configuração de `api/.env` e `.env`, criação da rede Docker `deadlock_edge`, provisionamento do primeiro administrador (`admin:create`), comandos `npm run check` e execução da suíte de testes automatizados (`npm test --prefix api`).
-- **Suíte de testes automatizados da API:** integrada à `main` (PR #54) e executada automaticamente no CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)):
+- **Suíte de testes automatizados da API:** integrada à `main` (PR #54) e ampliada pelos PRs #110, #112, #113, #114 e #116, executada automaticamente no CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)):
   - [`api/tests/client.validation.unit.test.ts`](../api/tests/client.validation.unit.test.ts) — validação unitária de CPF/CNPJ e telefones brasileiros.
   - [`api/tests/quote.calculations.unit.test.ts`](../api/tests/quote.calculations.unit.test.ts) — regras de negócio e cálculos de orçamentos com tipos Decimal em R$.
   - [`api/tests/client.integration.test.ts`](../api/tests/client.integration.test.ts) — testes de integração HTTP, autenticação, perfis e CRUD de clientes.
   - [`api/tests/quote.integration.test.ts`](../api/tests/quote.integration.test.ts) — testes de integração HTTP, permissões RBAC e transações de orçamentos.
+  - [`api/tests/quote-status.integration.test.ts`](../api/tests/quote-status.integration.test.ts) — transições e autorização de orçamentos.
+  - [`api/tests/service.integration.test.ts`](../api/tests/service.integration.test.ts) — serviços, concorrência e vínculo com orçamento.
+  - [`api/tests/visit.integration.test.ts`](../api/tests/visit.integration.test.ts) — agendamento, vínculos, conflitos e autorização.
+  - [`api/tests/aftercare.integration.test.ts`](../api/tests/aftercare.integration.test.ts) e [`operational.unit.test.ts`](../api/tests/operational.unit.test.ts) — garantias, revisões, alertas e datas.
+  - [`api/tests/quote-evidence.integration.test.ts`](../api/tests/quote-evidence.integration.test.ts) e [`evidence-validation.unit.test.ts`](../api/tests/evidence-validation.unit.test.ts) — evidências privadas e validação de arquivos.
 - **[CI/CD e Deploy na VM (`deploy.md`)](deploy.md)** — pipeline completo do GitHub Actions (`CI` → `Notify central CD`), integração com o repositório privado `univates-deadlock/deadlock-deploy`, operação do runner self-hosted na VM, Docker Compose, proxy reverso Caddy central e requisitos de variáveis de ambiente.
 
 ---

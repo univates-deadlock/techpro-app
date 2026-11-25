@@ -1,6 +1,6 @@
 # TechPro — Entrega final e backlog
 
-## Escopo final da entrega acadêmica — 24/11/2026
+## Escopo final da entrega acadêmica — 25/11/2026
 
 A entrega foi congelada por decisão de escopo da equipe. O PRD original preserva a visão do produto e a rastreabilidade das necessidades levantadas; não representa aceite integral pelo cliente. Esta matriz distingue código integrado, funcionalidade apenas de API e itens pós-MVP. Não equivale a homologação ou validação de produção.
 
@@ -12,7 +12,7 @@ A entrega foi congelada por decisão de escopo da equipe. O PRD original preserv
 | Garantias e revisões | Interface de listagem, criação e edição; alteração de status de revisões; API com operações adicionais | PRs #113, #117; [contrato](aftercare-api.md) |
 | Alertas e dashboard | API e indicadores comerciais/operacionais reais para ADMIN/PLANNING; sem agenda individual do técnico | PR #113 |
 | Evidências de aprovação | API de upload/leitura privada S3, testada em ambiente descartável; UI de upload e comprovação de configuração em produção pendentes | PR #114; [contrato](quote-evidence.md) |
-| Visitas e atribuição | API de planejamento, atribuição e consulta para ADMIN/PLANNING, com verificação de conflitos; sem agenda individual, execução ou interface | [PR #116](https://github.com/univates-deadlock/techpro-app/pull/116), [CI](https://github.com/univates-deadlock/techpro-app/actions/runs/45305902264) |
+| Visitas e atribuição | API de planejamento, atribuição e consulta para ADMIN/PLANNING, com verificação de conflitos; sem agenda individual, execução ou interface | [PR #116](https://github.com/univates-deadlock/techpro-app/pull/116), [CI](https://github.com/univates-deadlock/techpro-app/actions/runs/45474875050) |
 
 ### Evolução pós-MVP (backlog)
 
@@ -30,4 +30,4 @@ RF01–RF08: núcleo integrado; RF09: interface parcial (expiração via API); R
 
 ### Validação e operação
 
-Os PRs #108, #110, #112, #113, #114, #116 e #117 compõem a entrega. O CI do #117 passou nos jobs API e Frontend; o do #116 também passou após a resolução de conflito e ajustes de fixtures. A aplicação possui pipeline de CI/CD e ambiente publicado previsto em https://app.matbdev.com; o estado da implantação e a aceitação pelo cliente não foram revalidados nesta revisão. Consulte o [guia de deploy](deploy.md) e o [Kanban consolidado](https://github.com/univates-deadlock/techpro-app/issues/109).
+A documentação de entrega está centralizada no GitHub: [PRD](documento-requisitos.md), [modelagem](modelagem-dados.md) e [índice dos guias técnicos](README.md). A aplicação possui pipeline de CI/CD e ambiente publicado previsto em https://app.matbdev.com; o estado da implantação e a aceitação pelo cliente não foram revalidados nesta revisão. Consulte o [guia de deploy](deploy.md) e o [Kanban consolidado](https://github.com/univates-deadlock/techpro-app/issues/109).

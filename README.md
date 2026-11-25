@@ -68,7 +68,7 @@ Em implantação na VM da Univates, os containers `api` e `frontend` conectam-se
 
 ## 5. Estado das funcionalidades — entrega final
 
-A referência é o código integrado à main em 24/11/2026; veja a [matriz de entrega e backlog pós-MVP](docs/entrega-final.md) para rastreabilidade e evidências.
+A referência é o código integrado à main em 25/11/2026; veja a [matriz de entrega e backlog pós-MVP](docs/entrega-final.md) para rastreabilidade e evidências.
 
 | Módulo | Entrega |
 | --- | --- |
@@ -90,9 +90,9 @@ Toda autorização real é validada no backend a partir da sessão verificada (`
 
 | Perfil | Papel no negócio | Permissões implementadas atualmente |
 | --- | --- | --- |
-| `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços pela API, garantias, revisões e dashboard. |
-| `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`) e dashboard. Recebe `403` em `/api/users` (link "Usuários" oculto na barra lateral). |
-| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/servicos`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` em `/api/users`, `/api/clients` e `/api/quotes`. Suas funcionalidades operacionais (agenda e registro de visitas) ficam no backlog pós-MVP. |
+| `ADMIN` | Gestor / Administrador | Acesso completo aos módulos implementados: autenticação, CRUD de usuários (`/api/users`), CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços e visitas pela API, garantias, revisões e dashboard. |
+| `PLANNING` | Orçamento / Planejamento | Autenticação, CRUD de clientes (`/api/clients`), CRUD de orçamentos/itens (`/api/quotes`), serviços e visitas pela API, garantias, revisões e dashboard. Recebe `403` em `/api/users` (link "Usuários" oculto na barra lateral). |
+| `TECHNICIAN` | Técnico | Autenticação e acesso ao shell interno (`/` operacional e `/servicos`). Páginas administrativas/comerciais ficam ocultas no menu e redirecionam no SSR; na API recebe `403` nos módulos de usuários, clientes, orçamentos, serviços, visitas, garantias, revisões, alertas e dashboard. Suas funcionalidades operacionais (agenda e registro de visitas) ficam no backlog pós-MVP. |
 
 ---
 
@@ -319,6 +319,7 @@ O projeto encerra a entrega acadêmica com o escopo reduzido explicitado na [mat
 - **[Índice central da documentação](docs/README.md)** — mapa completo dos documentos técnicos e de produto.
 - **[Documentação da API](api/README.md)** — arquitetura do backend, autenticação Better Auth, matriz de permissões, contratos completos dos endpoints e regras de cálculo.
 - **[Documentação do Frontend](frontend/README.md)** — estrutura do Next.js App Router, verificação SSR de sessão, componentes, máscaras e integração HTTP.
+- **[Modelagem de dados — DER e dicionário](docs/modelagem-dados.md)** — modelo relacional da implementação e fluxo dos módulos.
 - **[Banco de dados e Prisma](api/prisma/README.md)** e **[Histórico de migrations](api/prisma/migrations/README.md)** — modelo relacional e evolução do schema.
 - **[Guia de CI/CD e Deploy](docs/deploy.md)** — variáveis de ambiente na VM, rede `deadlock_edge`, Caddy central e operação do runner self-hosted.
 - **[Documento de Requisitos (PRD)](docs/documento-requisitos.md)** — escopo planejado do MVP, requisitos funcionais/não funcionais, casos de uso e DER.
